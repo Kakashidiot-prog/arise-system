@@ -1,0 +1,72 @@
+import axios from 'axios';
+
+const API_URL = 'http://localhost:3000';
+
+const api = axios.create({
+  baseURL: API_URL,
+  headers: { 'Content-Type': 'application/json' }
+});
+
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+export const authApi = {
+  register: async (username: string, password: string) => {
+    const res = await api.post('/auth/register', { username, password });
+    return res.data;
+  },
+  login: async (username: string, password: string) => {
+    const res = await api.post('/auth/login', { username, password });
+    return res.data;
+  },
+};
+
+export const questsApi = {
+  getAll: async () => {
+    const res = await api.get('/quests');
+    return res.data;
+  },
+};
+
+export const progressApi = {
+  toggle: async (taskId: number) => {
+    const res = await api.post(`/progress/${taskId}/toggle`);
+    return res.data;
+  },
+  getUserProgress: async () => {
+    const res = await api.get('/progress');
+    return res.data;
+  },
+  getStats: async () => {
+    const res = await api.get('/progress/stats');
+    return res.data;
+  },
+};
+
+export const logsApi = {
+  create: async (text: string) => {
+    const res = await api.post('/logs', { text });
+    return res.data;
+  },
+  getAll: async () => {
+    const res = await api.get('/logs');
+    return res.data;
+  },
+};
+
+export const setToken = (token: string) => {
+  localStorage.setItem('token', token);
+};
+
+export const getToken = () => localStorage.getItem('token');
+
+export const removeToken = () => {
+  localStorage.removeItem('token');
+};
+
+export default api;

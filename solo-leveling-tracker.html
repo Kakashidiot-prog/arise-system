@@ -1,0 +1,978 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>System — Hunter's Log</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Share+Tech+Mono&family=Rajdhani:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+
+:root{
+  --bg:#06040f;
+  --bg2:#0c0920;
+  --bg3:#110e28;
+  --panel:#0f0d20;
+  --panel2:#15122a;
+  --border:#2a2060;
+  --border2:#3d2fa0;
+  --purple:#7a5fff;
+  --purple2:#a99eff;
+  --purple3:#c8bfff;
+  --gold:#f5c842;
+  --gold2:#fad96a;
+  --green:#4de89a;
+  --green2:#2ab06a;
+  --red:#ff4f4f;
+  --blue:#5ab4ff;
+  --text:#e8e0ff;
+  --muted:#5a5090;
+  --muted2:#3d3680;
+  --font-title:'Cinzel',serif;
+  --font-mono:'Share Tech Mono',monospace;
+  --font-body:'Rajdhani',sans-serif;
+}
+
+html{scroll-behavior:smooth}
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:var(--font-body);
+  font-size:16px;
+  min-height:100vh;
+  overflow-x:hidden;
+}
+
+/* Animated background grid */
+body::before{
+  content:'';
+  position:fixed;
+  inset:0;
+  background-image:
+    linear-gradient(rgba(122,95,255,0.03) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(122,95,255,0.03) 1px,transparent 1px);
+  background-size:40px 40px;
+  pointer-events:none;
+  z-index:0;
+}
+body::after{
+  content:'';
+  position:fixed;
+  top:-50%;left:-50%;
+  width:200%;height:200%;
+  background:radial-gradient(ellipse at 50% 0%,rgba(122,95,255,0.06) 0%,transparent 60%);
+  pointer-events:none;
+  z-index:0;
+}
+
+.container{
+  max-width:900px;
+  margin:0 auto;
+  padding:24px 16px 80px;
+  position:relative;
+  z-index:1;
+}
+
+/* ── HEADER ── */
+.sys-header{
+  text-align:center;
+  padding:32px 0 24px;
+  border-bottom:1px solid var(--border);
+  margin-bottom:24px;
+  position:relative;
+}
+.sys-header::before,.sys-header::after{
+  content:'';
+  position:absolute;
+  bottom:-1px;
+  width:80px;height:2px;
+  background:var(--purple);
+}
+.sys-header::before{left:50%;transform:translateX(-50%) translateX(-40px)}
+.sys-header::after{left:50%;transform:translateX(-50%) translateX(-40px);
+  background:linear-gradient(90deg,transparent,var(--purple),transparent);
+  width:160px;transform:translateX(-80px)}
+.sys-alert{
+  font-family:var(--font-mono);
+  font-size:11px;
+  letter-spacing:3px;
+  color:var(--muted);
+  margin-bottom:8px;
+  animation:blink 2s ease-in-out infinite;
+}
+@keyframes blink{0%,100%{opacity:.5}50%{opacity:1}}
+.sys-name{
+  font-family:var(--font-title);
+  font-size:32px;
+  font-weight:700;
+  color:var(--text);
+  letter-spacing:2px;
+  text-shadow:0 0 40px rgba(122,95,255,0.4);
+  margin-bottom:4px;
+}
+.sys-rank{
+  font-family:var(--font-mono);
+  font-size:13px;
+  color:var(--purple2);
+  letter-spacing:2px;
+}
+
+/* ── STAT ROW ── */
+.stat-row{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:10px;
+  margin-bottom:20px;
+}
+.stat-card{
+  background:var(--panel);
+  border:1px solid var(--border);
+  border-radius:8px;
+  padding:12px;
+  text-align:center;
+  position:relative;
+  overflow:hidden;
+  transition:border-color .3s;
+}
+.stat-card:hover{border-color:var(--border2)}
+.stat-card::before{
+  content:'';
+  position:absolute;
+  top:0;left:0;right:0;
+  height:2px;
+  background:var(--purple);
+  opacity:.4;
+}
+.stat-label{
+  font-family:var(--font-mono);
+  font-size:10px;
+  letter-spacing:2px;
+  color:var(--muted);
+  text-transform:uppercase;
+  margin-bottom:6px;
+}
+.stat-val{
+  font-family:var(--font-mono);
+  font-size:24px;
+  font-weight:400;
+  color:var(--purple2);
+}
+.stat-val.gold{color:var(--gold)}
+.stat-val.green{color:var(--green)}
+.stat-val.blue{color:var(--blue)}
+
+/* ── EXP BAR ── */
+.exp-wrap{margin-bottom:24px}
+.exp-header{
+  display:flex;
+  justify-content:space-between;
+  font-family:var(--font-mono);
+  font-size:11px;
+  color:var(--muted);
+  margin-bottom:6px;
+}
+.exp-track{
+  background:var(--bg2);
+  border:1px solid var(--border);
+  border-radius:4px;
+  height:16px;
+  overflow:hidden;
+  position:relative;
+}
+.exp-fill{
+  height:100%;
+  background:linear-gradient(90deg,#2d1fa0,#7a5fff,#a99eff);
+  border-radius:3px;
+  transition:width 1s cubic-bezier(.4,0,.2,1);
+  position:relative;
+}
+.exp-fill::after{
+  content:'';
+  position:absolute;
+  top:0;right:0;bottom:0;width:20px;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,0.3));
+  animation:shine 2s ease-in-out infinite;
+}
+@keyframes shine{0%,100%{opacity:0}50%{opacity:1}}
+
+/* ── TABS ── */
+.tabs{
+  display:flex;
+  gap:4px;
+  margin-bottom:20px;
+  background:var(--panel);
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:4px;
+}
+.tab{
+  flex:1;
+  padding:10px;
+  border:none;
+  border-radius:7px;
+  background:transparent;
+  color:var(--muted);
+  font-family:var(--font-mono);
+  font-size:12px;
+  letter-spacing:1px;
+  cursor:pointer;
+  transition:all .2s;
+  text-transform:uppercase;
+}
+.tab.active{
+  background:var(--bg2);
+  color:var(--purple3);
+  border:1px solid var(--border2);
+}
+.tab:hover:not(.active){color:var(--purple2)}
+
+/* ── SECTION HEADER ── */
+.section-head{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  margin-bottom:14px;
+}
+.section-label{
+  font-family:var(--font-mono);
+  font-size:11px;
+  letter-spacing:3px;
+  color:var(--muted);
+  text-transform:uppercase;
+  white-space:nowrap;
+}
+.section-line{flex:1;height:1px;background:var(--border)}
+
+/* ── QUEST CARD ── */
+.quest-card{
+  background:var(--panel);
+  border:1px solid var(--border);
+  border-radius:10px;
+  margin-bottom:10px;
+  overflow:hidden;
+  transition:border-color .3s,background .3s;
+}
+.quest-card.active{border-color:var(--border2);background:var(--panel2)}
+.quest-card.done{border-color:#1a4030;background:#08150f}
+.quest-card.locked{opacity:.45}
+
+.quest-header{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding:14px 16px;
+  cursor:pointer;
+  user-select:none;
+}
+.quest-icon{
+  width:36px;height:36px;
+  border-radius:8px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:18px;
+  flex-shrink:0;
+  background:var(--bg2);
+  border:1px solid var(--border);
+}
+.quest-meta{flex:1;min-width:0}
+.quest-name{
+  font-family:var(--font-title);
+  font-size:14px;
+  color:var(--text);
+  margin-bottom:2px;
+}
+.quest-card.done .quest-name{color:var(--green2);text-decoration:line-through}
+.quest-sub{font-size:12px;color:var(--muted);font-family:var(--font-mono)}
+.quest-badge{
+  font-family:var(--font-mono);
+  font-size:10px;
+  padding:3px 10px;
+  border-radius:20px;
+  white-space:nowrap;
+  flex-shrink:0;
+}
+.badge-active{background:#1e1660;color:var(--purple2);border:1px solid var(--border2)}
+.badge-done{background:#0d2a1e;color:var(--green);border:1px solid #1a4030}
+.badge-locked{background:#111;color:var(--muted2);border:1px solid #1e1a30}
+.badge-boss{background:#2a0a0a;color:#ff8080;border:1px solid #5a1a1a}
+
+.quest-body{
+  display:none;
+  padding:0 16px 14px;
+  border-top:1px solid var(--border);
+}
+.quest-body.open{display:block}
+
+.mini-bar-track{
+  background:var(--bg2);
+  border-radius:3px;height:4px;
+  margin:10px 0 14px;overflow:hidden;
+}
+.mini-bar{height:100%;border-radius:3px;transition:width .6s ease}
+.bar-active{background:var(--purple)}
+.bar-done{background:var(--green2)}
+.bar-locked{background:var(--muted2)}
+
+/* ── TASK ROWS ── */
+.task-row{
+  display:flex;align-items:flex-start;gap:10px;
+  padding:7px 0;
+  border-bottom:1px solid rgba(42,32,96,0.4);
+}
+.task-row:last-child{border-bottom:none}
+.task-check{
+  width:18px;height:18px;
+  border:1px solid var(--border2);
+  border-radius:4px;
+  background:var(--bg);
+  cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;
+  margin-top:1px;
+  transition:all .2s;
+  font-size:11px;
+  color:transparent;
+}
+.task-check.checked{
+  background:var(--border2);
+  color:var(--purple3);
+  border-color:var(--purple);
+}
+.task-check:hover{border-color:var(--purple)}
+.task-info{flex:1}
+.task-name{font-size:14px;color:var(--text);line-height:1.3;font-family:var(--font-body);font-weight:500}
+.task-check.checked + .task-info .task-name{color:var(--green);text-decoration:line-through;opacity:.7}
+.task-note{font-size:11px;color:var(--muted);font-family:var(--font-mono);margin-top:2px}
+.task-exp{
+  font-family:var(--font-mono);font-size:11px;
+  color:var(--gold);flex-shrink:0;margin-top:2px;
+}
+
+/* ── ADD TASK ── */
+.add-btn{
+  display:flex;align-items:center;gap:8px;
+  background:transparent;
+  border:1px dashed var(--muted2);
+  border-radius:6px;
+  color:var(--muted);
+  font-family:var(--font-mono);font-size:12px;
+  padding:8px 12px;
+  cursor:pointer;
+  width:100%;
+  margin-top:8px;
+  transition:all .2s;
+}
+.add-btn:hover{border-color:var(--purple);color:var(--purple2)}
+
+/* ── ADD TASK FORM ── */
+.add-form{
+  display:none;
+  margin-top:8px;
+  background:var(--bg2);
+  border:1px solid var(--border2);
+  border-radius:8px;
+  padding:12px;
+  gap:8px;
+  flex-direction:column;
+}
+.add-form.open{display:flex}
+.add-form input{
+  background:var(--bg);
+  border:1px solid var(--border);
+  border-radius:6px;
+  color:var(--text);
+  font-family:var(--font-body);font-size:14px;
+  padding:8px 12px;
+  outline:none;
+  transition:border-color .2s;
+}
+.add-form input:focus{border-color:var(--purple)}
+.add-form input::placeholder{color:var(--muted2)}
+.form-row{display:flex;gap:8px}
+.btn-sm{
+  padding:7px 16px;
+  border-radius:6px;
+  font-family:var(--font-mono);font-size:12px;
+  cursor:pointer;
+  border:1px solid;
+  transition:all .2s;
+}
+.btn-confirm{background:var(--border2);border-color:var(--purple);color:var(--purple3)}
+.btn-confirm:hover{background:var(--purple);color:#fff}
+.btn-cancel{background:transparent;border-color:var(--border);color:var(--muted)}
+.btn-cancel:hover{border-color:var(--red);color:var(--red)}
+
+/* ── REPORT TAB ── */
+.report-grid{
+  display:grid;grid-template-columns:1fr 1fr;
+  gap:12px;margin-bottom:20px;
+}
+.report-card{
+  background:var(--panel);border:1px solid var(--border);
+  border-radius:10px;padding:16px;
+}
+.report-title{
+  font-family:var(--font-mono);font-size:11px;
+  letter-spacing:2px;color:var(--muted);
+  text-transform:uppercase;margin-bottom:12px;
+}
+.streak-num{
+  font-family:var(--font-title);font-size:48px;
+  color:var(--gold);line-height:1;
+}
+.streak-label{font-family:var(--font-mono);font-size:11px;color:var(--muted);margin-top:4px}
+.week-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-top:8px}
+.day-dot{
+  aspect-ratio:1;border-radius:4px;
+  background:var(--bg2);border:1px solid var(--border);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  font-family:var(--font-mono);font-size:9px;color:var(--muted);
+  cursor:default;transition:all .2s;
+}
+.day-dot.active{background:var(--border2);border-color:var(--purple);color:var(--purple3)}
+.day-dot.today{border-color:var(--gold);color:var(--gold)}
+.day-dot span{font-size:7px;margin-top:2px;opacity:.6}
+
+.log-entry{
+  padding:10px 14px;
+  background:var(--bg2);border:1px solid var(--border);
+  border-radius:8px;margin-bottom:8px;
+  font-family:var(--font-mono);font-size:12px;
+}
+.log-date{color:var(--muted);font-size:10px;margin-bottom:4px}
+.log-text{color:var(--purple2)}
+
+/* ── TOAST ── */
+.toast-wrap{
+  position:fixed;top:24px;left:50%;transform:translateX(-50%);
+  z-index:100;pointer-events:none;
+  display:flex;flex-direction:column;gap:8px;align-items:center;
+}
+.toast{
+  background:var(--panel2);
+  border:1px solid var(--purple);
+  border-radius:10px;
+  padding:14px 28px;text-align:center;
+  animation:toastIn 2.8s ease forwards;
+  pointer-events:none;
+  min-width:260px;
+}
+@keyframes toastIn{
+  0%{opacity:0;transform:translateY(-16px)}
+  15%{opacity:1;transform:translateY(0)}
+  75%{opacity:1;transform:translateY(0)}
+  100%{opacity:0;transform:translateY(-8px)}
+}
+.toast-sys{font-family:var(--font-mono);font-size:10px;letter-spacing:3px;color:var(--muted);margin-bottom:4px}
+.toast-msg{font-family:var(--font-title);font-size:16px;color:var(--text)}
+.toast-sub{font-family:var(--font-mono);font-size:11px;color:var(--purple2);margin-top:4px}
+
+/* ── PANEL SWITCH ── */
+.tab-panel{display:none}
+.tab-panel.active{display:block}
+
+/* ── FOOTER ── */
+.footer{
+  text-align:center;margin-top:40px;
+  font-family:var(--font-mono);font-size:11px;color:var(--muted2);
+  letter-spacing:2px;
+}
+
+/* ── RESPONSIVE ── */
+@media(max-width:600px){
+  .stat-row{grid-template-columns:repeat(2,1fr)}
+  .report-grid{grid-template-columns:1fr}
+  .sys-name{font-size:24px}
+}
+</style>
+</head>
+<body>
+
+<div class="toast-wrap" id="toast-wrap"></div>
+
+<div class="container">
+
+  <!-- HEADER -->
+  <div class="sys-header">
+    <div class="sys-alert">[ system online ]</div>
+    <div class="sys-name">Solo Leveling</div>
+    <div class="sys-rank" id="rank-label">E-Rank · MERN Initiate · Level 1</div>
+  </div>
+
+  <!-- STATS -->
+  <div class="stat-row">
+    <div class="stat-card">
+      <div class="stat-label">Level</div>
+      <div class="stat-val" id="stat-level">1</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Total EXP</div>
+      <div class="stat-val gold" id="stat-exp">0</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Quests done</div>
+      <div class="stat-val green" id="stat-quests">0/0</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Day streak</div>
+      <div class="stat-val blue" id="stat-streak">0</div>
+    </div>
+  </div>
+
+  <!-- EXP BAR -->
+  <div class="exp-wrap">
+    <div class="exp-header">
+      <span>EXP to next level</span>
+      <span id="exp-pct">0 / 100</span>
+    </div>
+    <div class="exp-track">
+      <div class="exp-fill" id="exp-bar" style="width:0%"></div>
+    </div>
+  </div>
+
+  <!-- TABS -->
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('mind')">Mind Training</button>
+    <button class="tab" onclick="switchTab('body')">Physical</button>
+    <button class="tab" onclick="switchTab('report')">Weekly Report</button>
+  </div>
+
+  <!-- MIND TAB -->
+  <div class="tab-panel active" id="tab-mind">
+    <div id="quest-list-mind"></div>
+  </div>
+
+  <!-- BODY TAB -->
+  <div class="tab-panel" id="tab-body">
+    <div id="quest-list-body"></div>
+  </div>
+
+  <!-- REPORT TAB -->
+  <div class="tab-panel" id="tab-report">
+    <div class="report-grid">
+      <div class="report-card">
+        <div class="report-title">Current streak</div>
+        <div class="streak-num" id="report-streak">0</div>
+        <div class="streak-label">days active</div>
+      </div>
+      <div class="report-card">
+        <div class="report-title">This week</div>
+        <div class="week-grid" id="week-grid"></div>
+      </div>
+    </div>
+    <div class="report-card" style="margin-bottom:12px">
+      <div class="report-title">Task completion — this week</div>
+      <div id="bar-chart" style="margin-top:8px"></div>
+    </div>
+    <div>
+      <div class="section-head">
+        <span class="section-label">System log</span>
+        <div class="section-line"></div>
+      </div>
+      <div id="log-list"></div>
+    </div>
+  </div>
+
+  <div class="footer">[ hunter's log · v1.0 · aria system ]</div>
+</div>
+
+<script>
+const RANKS=[
+  [0,'E-Rank · MERN Initiate'],
+  [5,'D-Rank · Frontend Awakened'],
+  [10,'C-Rank · Full Stack Rising'],
+  [18,'B-Rank · Backend Slayer'],
+  [25,'A-Rank · Auth Conqueror'],
+  [35,'S-Rank · Shadow Monarch']
+];
+
+const DEFAULT_MIND=[
+  {
+    id:'m1',name:'Gate 1 — JS Foundations',icon:'⚡',
+    sub:'Weeks 1–2 · +8 EXP total',
+    tasks:[
+      {id:'m1t1',name:'Understand const, let, scope & clo77sures',note:'Why does my variable disappear? — answered here',exp:2},
+      {id:'m1t2',name:'Master .map() .filter() .reduce()',note:'You\'ve used these. Now understand what they return.',exp:2},
+      {id:'m1t3',name:'Promises, async/await — what async means',note:'Why your fetch calls sometimes break silently',exp:2},
+      {id:'m1t4',name:'Destructuring, spread, optional chaining',note:'Modern JS you\'ll see everywhere in React + Node',exp:1},
+      {id:'m1t5',name:'import/export — ES modules vs CommonJS',note:'Why React uses import but Node used require',exp:1},
+    ]
+  },
+  {
+    id:'m2',name:'Gate 2 — React Mastery',icon:'⚛',
+    sub:'Weeks 3–4 · +8 EXP total',
+    tasks:[
+      {id:'m2t1',name:'Components — functions that return UI',note:'Props flow down, events flow up. Draw this on paper.',exp:2},
+      {id:'m2t2',name:'useState — why re-renders happen',note:'Mutating state directly = bugs. Understand why.',exp:2},
+      {id:'m2t3',name:'useEffect — dependency array & cleanup',note:'Why does this run 5 times? Dep array is your answer.',exp:2},
+      {id:'m2t4',name:'Lifting state up to parent components',note:'When data is needed by siblings',exp:1},
+      {id:'m2t5',name:'React Router — URL changes render components',note:'Client-side routing basics',exp:1},
+    ]
+  },
+  {
+    id:'m3',name:'Gate 3 — Node + Express',icon:'🖥',
+    sub:'Weeks 5–6 · +8 EXP total',
+    tasks:[
+      {id:'m3t1',name:'Node.js — JS outside the browser',note:'Event loop basics, non-blocking I/O',exp:2},
+      {id:'m3t2',name:'HTTP methods — GET POST PUT DELETE',note:'Understand the intent, not just the names',exp:2},
+      {id:'m3t3',name:'Express routes, controllers, middleware chain',note:'Request → middleware → route → controller → response',exp:2},
+      {id:'m3t4',name:'Error handling middleware — 4 params',note:'The (err, req, res, next) signature',exp:1},
+      {id:'m3t5',name:'dotenv — never hardcode secrets',note:'Configure your app with environment variables',exp:1},
+    ]
+  },
+  {
+    id:'m4',name:'Gate 4 — MongoDB + Mongoose',icon:'🗄',
+    sub:'Week 7 · +6 EXP total',
+    tasks:[
+      {id:'m4t1',name:'Document model vs relational — why MongoDB',note:'Objects all the way down',exp:2},
+      {id:'m4t2',name:'Mongoose schemas — types, required, defaults',note:'Define the shape of your data',exp:2},
+      {id:'m4t3',name:'CRUD — find, findById, save, delete',note:'The five operations you\'ll use 90% of the time',exp:1},
+      {id:'m4t4',name:'Connect Atlas + embed vs reference docs',note:'When to nest data vs separate collections',exp:1},
+    ]
+  },
+  {
+    id:'m5',name:'Final Boss — Auth & Deploy',icon:'👑',
+    sub:'Week 8 · +5 EXP · S-Rank unlock',
+    tasks:[
+      {id:'m5t1',name:'JWT — header, payload, signature',note:'Sign on login → verify on protected routes',exp:1},
+      {id:'m5t2',name:'bcrypt — never store plain passwords',note:'Hash before save, compare on login',exp:1},
+      {id:'m5t3',name:'Auth middleware — protect routes',note:'The gatekeeper between requests and data',exp:1},
+      {id:'m5t4',name:'CORS + axios interceptors frontend',note:'Connect React to your real backend',exp:1},
+      {id:'m5t5',name:'Deploy — Render + Vercel + Atlas',note:'Your app live on the internet. Ship it.',exp:1},
+    ]
+  }
+];
+
+const DEFAULT_BODY=[
+  {
+    id:'b1',name:'Daily Grind — Bodyweight',icon:'💪',
+    sub:'Every day · +1 EXP per session',
+    tasks:[
+      {id:'b1t1',name:'Push-ups — 3 sets',note:'Start: 3×10. Progress to 3×20',exp:0.25},
+      {id:'b1t2',name:'Squats — 3 sets',note:'Bodyweight. Add weight when 3×20 feels easy',exp:0.25},
+      {id:'b1t3',name:'Plank — hold 60s',note:'Build to 2 min. Core is everything',exp:0.25},
+      {id:'b1t4',name:'Pull-ups or inverted rows — 3 sets',note:'Doorframe bar or table rows if no bar',exp:0.25},
+    ]
+  },
+  {
+    id:'b2',name:'Cardio Gate',icon:'🏃',
+    sub:'3× per week · +0.5 EXP per run',
+    tasks:[
+      {id:'b2t1',name:'30 min run or brisk walk',note:'Zone 2 cardio — can hold a conversation pace',exp:0.5},
+      {id:'b2t2',name:'10 min HIIT finisher',note:'20s work / 10s rest × 8 rounds. Burpees, jumping jacks',exp:0.25},
+      {id:'b2t3',name:'Stretch & cool down — 10 min',note:'Hip flexors, hamstrings, shoulders',exp:0.25},
+    ]
+  },
+  {
+    id:'b3',name:'Hunter Diet Protocol',icon:'🥗',
+    sub:'Daily habits · +0.5 EXP per day',
+    tasks:[
+      {id:'b3t1',name:'Drink 2–3L water',note:'Set an alarm every 2 hrs if you forget',exp:0.25},
+      {id:'b3t2',name:'Eat protein with every meal',note:'Egg, chicken, tofu, legumes — aim for 0.8g/kg bodyweight',exp:0.25},
+    ]
+  },
+  {
+    id:'b4',name:'Recovery Arc',icon:'😴',
+    sub:'Non-negotiable · +0.5 EXP per day',
+    tasks:[
+      {id:'b4t1',name:'Sleep 7–8 hours',note:'Muscle is built during sleep, not the gym',exp:0.25},
+      {id:'b4t2',name:'No phone 30 min before bed',note:'Blue light kills melatonin. Try it for a week.',exp:0.25},
+    ]
+  }
+];
+
+// ── STATE ──
+let state=loadState();
+
+function loadState(){
+  try{
+    const s=localStorage.getItem('sl_tracker');
+    if(s) return JSON.parse(s);
+  }catch(e){}
+  return {
+    checked:{},
+    customTasks:{},
+    log:[],
+    streak:0,
+    lastActiveDate:null,
+    weekActivity:{}
+  };
+}
+function saveState(){
+  try{ localStorage.setItem('sl_tracker',JSON.stringify(state)); }catch(e){}
+}
+
+// ── EXP / LEVEL ──
+function getTotalExp(){
+  let total=0;
+  const allQuests=[...DEFAULT_MIND,...DEFAULT_BODY];
+  allQuests.forEach(q=>{
+    const tasks=[...q.tasks,...(state.customTasks[q.id]||[])];
+    tasks.forEach(t=>{ if(state.checked[t.id]) total+=t.exp; });
+  });
+  return Math.round(total*10)/10;
+}
+function getLevel(exp){ return Math.floor(exp/5)+1; }
+function getRank(exp){
+  let r=RANKS[0];
+  for(const entry of RANKS){ if(exp>=entry[0]) r=entry; }
+  return r;
+}
+
+// ── STREAK ──
+function updateStreak(){
+  const today=new Date().toISOString().slice(0,10);
+  if(state.lastActiveDate===today) return;
+  const yesterday=new Date(Date.now()-86400000).toISOString().slice(0,10);
+  if(state.lastActiveDate===yesterday){ state.streak=(state.streak||0)+1; }
+  else if(state.lastActiveDate!==today){ state.streak=1; }
+  state.lastActiveDate=today;
+  state.weekActivity[today]=true;
+  saveState();
+}
+
+// ── RENDER STATS ──
+function renderStats(){
+  const exp=getTotalExp();
+  const lvl=getLevel(exp);
+  const rank=getRank(exp);
+  const expInLevel=exp%5;
+  const pct=Math.round((expInLevel/5)*100);
+
+  document.getElementById('stat-level').textContent=lvl;
+  document.getElementById('stat-exp').textContent=exp;
+  document.getElementById('rank-label').textContent=rank[1]+' · Level '+lvl;
+
+  const allQuests=[...DEFAULT_MIND,...DEFAULT_BODY];
+  let done=0,total=0;
+  allQuests.forEach(q=>{
+    const tasks=[...q.tasks,...(state.customTasks[q.id]||[])];
+    tasks.forEach(t=>{ total++; if(state.checked[t.id]) done++; });
+  });
+  document.getElementById('stat-quests').textContent=done+'/'+total;
+  document.getElementById('stat-streak').textContent=state.streak||0;
+  document.getElementById('exp-bar').style.width=pct+'%';
+  document.getElementById('exp-pct').textContent=expInLevel.toFixed(1)+' / 5';
+}
+
+// ── RENDER QUESTS ──
+function renderQuests(quests,containerId){
+  const el=document.getElementById(containerId);
+  el.innerHTML='';
+
+  quests.forEach((q,qi)=>{
+    const prevDone=qi===0||isQuestDone(quests[qi-1]);
+    const locked=!prevDone;
+    const tasks=[...q.tasks,...(state.customTasks[q.id]||[])];
+    const checkedCount=tasks.filter(t=>state.checked[t.id]).length;
+    const allDone=checkedCount===tasks.length&&tasks.length>0;
+    const progress=tasks.length?Math.round((checkedCount/tasks.length)*100):0;
+
+    const card=document.createElement('div');
+    card.className='quest-card'+(allDone?' done':prevDone?' active':locked?' locked':'');
+
+    const badgeText=allDone?'Cleared':locked?'Locked':'In progress';
+    const badgeClass=allDone?'badge-done':locked?'badge-locked':qi===quests.length-1?'badge-boss':'badge-active';
+
+    let tasksHtml='';
+    if(!locked){
+      tasksHtml=tasks.map(t=>{
+        const checked=!!state.checked[t.id];
+        return `<div class="task-row">
+          <div class="task-check${checked?' checked':''}" onclick="toggleTask('${t.id}','${q.id}',${t.exp})">${checked?'✓':''}</div>
+          <div class="task-info">
+            <div class="task-name">${t.name}</div>
+            ${t.note?`<div class="task-note">${t.note}</div>`:''}
+          </div>
+          <div class="task-exp">+${t.exp} EXP</div>
+        </div>`;
+      }).join('');
+    }
+
+    const barClass=allDone?'bar-done':locked?'bar-locked':'bar-active';
+
+    card.innerHTML=`
+      <div class="quest-header" onclick="toggleCard(this)">
+        <div class="quest-icon">${q.icon}</div>
+        <div class="quest-meta">
+          <div class="quest-name">${q.name}</div>
+          <div class="quest-sub">${q.sub}</div>
+        </div>
+        <span class="quest-badge ${badgeClass}">${badgeText}</span>
+      </div>
+      <div class="quest-body">
+        <div class="mini-bar-track"><div class="mini-bar ${barClass}" style="width:${progress}%"></div></div>
+        ${tasksHtml}
+        ${!locked?`
+        <button class="add-btn" onclick="openAddForm('${q.id}',this)">+ add task</button>
+        <div class="add-form" id="form-${q.id}">
+          <input type="text" placeholder="Task name..." id="task-name-${q.id}"/>
+          <input type="text" placeholder="Note (optional)..." id="task-note-${q.id}"/>
+          <div class="form-row">
+            <input type="number" placeholder="EXP" id="task-exp-${q.id}" style="width:80px" value="1" min="0.25" step="0.25"/>
+            <button class="btn-sm btn-confirm" onclick="addCustomTask('${q.id}')">Add</button>
+            <button class="btn-sm btn-cancel" onclick="closeAddForm('${q.id}')">Cancel</button>
+          </div>
+        </div>`:''}
+      </div>`;
+
+    el.appendChild(card);
+  });
+}
+
+function isQuestDone(q){
+  const tasks=[...q.tasks,...(state.customTasks[q.id]||[])];
+  return tasks.length>0&&tasks.every(t=>state.checked[t.id]);
+}
+
+function toggleCard(header){
+  const body=header.nextElementSibling;
+  if(!body) return;
+  body.classList.toggle('open');
+}
+
+function toggleTask(taskId,questId,exp){
+  const wasChecked=!!state.checked[taskId];
+  state.checked[taskId]=!wasChecked;
+  updateStreak();
+  const expNow=getTotalExp();
+  const lvlBefore=getLevel(wasChecked?expNow+exp:expNow-exp);
+  const lvlNow=getLevel(expNow);
+  if(!wasChecked&&lvlNow>lvlBefore){
+    showToast('Level up!','You reached Level '+lvlNow,'Rank: '+getRank(expNow)[1]);
+  }
+  if(!wasChecked){
+    const allQuests=[...DEFAULT_MIND,...DEFAULT_BODY];
+    const quest=allQuests.find(q=>q.id===questId);
+    if(quest&&isQuestDone(quest)){
+      addLog('Quest cleared: '+quest.name);
+      showToast('Quest cleared',quest.name,'The System acknowledges your growth.');
+    }
+  }
+  saveState();
+  renderAll();
+}
+
+function openAddForm(qid,btn){
+  document.querySelectorAll('.add-form').forEach(f=>f.classList.remove('open'));
+  const form=document.getElementById('form-'+qid);
+  if(form) form.classList.add('open');
+}
+function closeAddForm(qid){
+  const form=document.getElementById('form-'+qid);
+  if(form) form.classList.remove('open');
+}
+function addCustomTask(qid){
+  const name=document.getElementById('task-name-'+qid)?.value?.trim();
+  if(!name) return;
+  const note=document.getElementById('task-note-'+qid)?.value?.trim()||'';
+  const exp=parseFloat(document.getElementById('task-exp-'+qid)?.value)||1;
+  const id='custom_'+Date.now();
+  if(!state.customTasks[qid]) state.customTasks[qid]=[];
+  state.customTasks[qid].push({id,name,note,exp});
+  closeAddForm(qid);
+  saveState();
+  renderAll();
+}
+
+// ── TOAST ──
+function showToast(title,msg,sub=''){
+  const wrap=document.getElementById('toast-wrap');
+  const t=document.createElement('div');
+  t.className='toast';
+  t.innerHTML=`<div class="toast-sys">— system alert —</div>
+    <div class="toast-msg">${title}</div>
+    <div class="toast-sub">${msg}${sub?'<br><span style="color:var(--muted);font-size:10px">'+sub+'</span>':''}</div>`;
+  wrap.appendChild(t);
+  setTimeout(()=>t.remove(),3000);
+}
+
+// ── LOG ──
+function addLog(text){
+  const date=new Date().toLocaleString('en-PH',{dateStyle:'medium',timeStyle:'short'});
+  state.log.unshift({date,text});
+  if(state.log.length>30) state.log=state.log.slice(0,30);
+  saveState();
+}
+
+// ── REPORT ──
+function renderReport(){
+  document.getElementById('report-streak').textContent=state.streak||0;
+
+  // Week grid
+  const grid=document.getElementById('week-grid');
+  grid.innerHTML='';
+  const days=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const today=new Date();
+  for(let i=6;i>=0;i--){
+    const d=new Date(today);
+    d.setDate(today.getDate()-i);
+    const key=d.toISOString().slice(0,10);
+    const isToday=i===0;
+    const active=!!state.weekActivity[key];
+    const dot=document.createElement('div');
+    dot.className='day-dot'+(active?' active':'')+(isToday?' today':'');
+    dot.innerHTML=days[d.getDay()]+'<span>'+(d.getDate())+'</span>';
+    grid.appendChild(dot);
+  }
+
+  // Bar chart
+  const chart=document.getElementById('bar-chart');
+  const allQuests=[...DEFAULT_MIND,...DEFAULT_BODY];
+  let html='';
+  allQuests.forEach(q=>{
+    const tasks=[...q.tasks,...(state.customTasks[q.id]||[])];
+    const done=tasks.filter(t=>state.checked[t.id]).length;
+    const pct=tasks.length?Math.round((done/tasks.length)*100):0;
+    html+=`<div style="margin-bottom:8px">
+      <div style="display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:11px;color:var(--muted);margin-bottom:3px">
+        <span>${q.icon} ${q.name}</span><span>${done}/${tasks.length}</span>
+      </div>
+      <div style="background:var(--bg2);border-radius:3px;height:6px;overflow:hidden">
+        <div style="width:${pct}%;height:100%;background:${pct===100?'var(--green)':'var(--purple)'};border-radius:3px;transition:width .6s ease"></div>
+      </div>
+    </div>`;
+  });
+  chart.innerHTML=html;
+
+  // Log
+  const logEl=document.getElementById('log-list');
+  if(!state.log.length){
+    logEl.innerHTML='<div class="log-entry"><div class="log-date">—</div><div class="log-text">No activity logged yet. Complete a quest to begin.</div></div>';
+  } else {
+    logEl.innerHTML=state.log.map(l=>`
+      <div class="log-entry">
+        <div class="log-date">${l.date}</div>
+        <div class="log-text">${l.text}</div>
+      </div>`).join('');
+  }
+}
+
+// ── TABS ──
+function switchTab(tab){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  event.target.classList.add('active');
+  document.getElementById('tab-'+tab).classList.add('active');
+  if(tab==='report') renderReport();
+}
+
+function renderAll(){
+  renderStats();
+  renderQuests(DEFAULT_MIND,'quest-list-mind');
+  renderQuests(DEFAULT_BODY,'quest-list-body');
+}
+
+// ── INIT ──
+updateStreak();
+renderAll();
+
+// Daily reset check
+const today=new Date().toISOString().slice(0,10);
+const lastReset=localStorage.getItem('sl_last_reset');
+if(lastReset!==today){
+  addLog('New day started — '+today);
+  localStorage.setItem('sl_last_reset',today);
+}
+</script>
+</body>
+</html>

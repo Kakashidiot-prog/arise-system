@@ -1,0 +1,101 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Share+Tech+Mono&family=Rajdhani:wght@300;400;500;600&display=swap');
+
+:root {
+  --bg: #06040f;
+  --bg2: #0c0920;
+  --bg3: #110e28;
+  --panel: #0f0d20;
+  --panel2: #15122a;
+  --border: #2a2060;
+  --border2: #3d2fa0;
+  --purple: #7a5fff;
+  --purple2: #a99eff;
+  --purple3: #c8bfff;
+  --gold: #f5c842;
+  --gold2: #fad96a;
+  --green: #4de89a;
+  --green2: #2ab06a;
+  --red: #ff4f4f;
+  --blue: #5ab4ff;
+  --text: #e8e0ff;
+  --muted: #5a5090;
+  --muted2: #3d3680;
+  --font-title: 'Cinzel', serif;
+  --font-mono: 'Share Tech Mono', monospace;
+  --font-body: 'Rajdhani', sans-serif;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 16px;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Animated background grid */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: 
+    linear-gradient(rgba(122, 95, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(122, 95, 255, 0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+body::after {
+  content: '';
+  position: fixed;
+  top: -50%; left: -50%;
+  width: 200%; height: 200%;
+  background: radial-gradient(ellipse at 50% 0%, rgba(122, 95, 255, 0.06) 0%, transparent 60%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Base Utility Classes for Components */
+.sys-font-title { font-family: var(--font-title); }
+.sys-font-mono { font-family: var(--font-mono); }
+
+.glass-panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  backdrop-filter: blur(10px);
+}
+
+.glow-text {
+  text-shadow: 0 0 40px rgba(122, 95, 255, 0.4);
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+
+.animate-sys-blink {
+  animation: blink 2s ease-in-out infinite;
+}
+
+@keyframes shine {
+  0%, 100% { opacity: 0; }
+  50% { opacity: 1; }
+}
+
+.animate-sys-shine {
+  animation: shine 2s ease-in-out infinite;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: var(--border2); }
