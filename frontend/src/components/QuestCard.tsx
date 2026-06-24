@@ -72,7 +72,10 @@ export default function QuestCard({ name, sub, icon, tasks, completedTaskIds, on
           {tasks.map(task => (
             <TaskItem 
               key={task.id}
-              {...task}
+              id={task.id}
+              name={task.name}
+              note={task.note}
+              exp={task.exp}
               isCompleted={completedTaskIds.includes(task.id)}
               onToggle={onToggleTask}
             />

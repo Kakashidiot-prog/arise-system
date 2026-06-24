@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
-import { removeToken, progressApi, questsApi } from '../api/axios';
+import { removeToken, progressApi, questsApi, logsApi } from '../api/axios';
 import SystemHeader from '../components/SystemHeader';
 import StatCard from '../components/StatCard';
 import ExpBar from '../components/ExpBar';
+import QuestCard from '../components/QuestCard';
+
 
 const SOLO_LEVELING_QUOTES = [
   { text: "I will keep leveling up until I reach the top.", speaker: "Sung Jinwoo" },
@@ -39,6 +41,18 @@ function getRank(level: number): string {
   return 'E-Rank';
 }
 
+function getLast7Days() {
+  const result = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    const dateStr = d.toISOString().slice(0, 10);
+    const dayName = d.toLocaleDateString('en-US', { weekday: 'short' });
+    result.push({ dateStr, dayName });
+  }
+  return result;
+}
+
 interface Quest {
   id: number;
   key: string;
@@ -60,7 +74,11 @@ export default function Dashboard() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [quests, setQuests] = useState<Quest[]>([]);
   const [completedTasks, setCompletedTasks] = useState<number[]>([]);
+  const [activeTab, setActiveTab] = useState<'mind' | 'body' | 'life'  | 'report'>('mind');
+  const [logs, setLogs] = useState<{ id: number; text: string; createdAt: string }[]>([]);
+  const [weekActivity, setWeekActivity] = useState<Record<string, boolean>>({});
   const quote = getDailyQuote();
+  
 
   useEffect(() => {
     loadData();
@@ -68,14 +86,18 @@ export default function Dashboard() {
 
   const loadData = async () => {
     try {
-      const [statsData, questsData, progressData] = await Promise.all([
+      const [statsData, questsData, progressData, logsData, activityData] = await Promise.all([
         progressApi.getStats(),
         questsApi.getAll(),
         progressApi.getUserProgress(),
+        logsApi.getAll(),
+        progressApi.getWeekActivity(),
       ]);
       setStats(statsData);
       setQuests(questsData);
       setCompletedTasks(progressData.map((p: { taskId: number }) => p.taskId));
+      setLogs(logsData);
+      setWeekActivity(activityData);
     } catch (e) {
       console.error(e);
     }
@@ -136,73 +158,98 @@ export default function Dashboard() {
           </p>
         </div>
 
-        {/* Quests Section */}
-        <div className="space-y-6">
-          <div className="flex items-center gap-4 mb-2">
-            <span className="sys-font-mono text-[11px] tracking-[3px] text-muted uppercase">Active Quests</span>
-            <div className="flex-1 h-px bg-border" />
-          </div>
+        {/* Tab Navigation */}
+        <div className="flex gap-[2px] mb-6 bg-panel border border-border rounded-lg p-1">
+         {(['mind', 'body', 'life', 'report'] as const).map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            className={`flex-1 py-2 rounded sys-font-mono text-[10px] tracking-[2px] uppercase transition-all ${
+              activeTab === tab
+                ? 'bg-bg2 text-purple2 border border-border2'
+                : 'text-muted hover:text-purple2'
+              
+          }`}
+    > 
+      {tab === 'mind' ? 'Dev Skills' : tab === 'body' ? 'Physical' : tab === 'life' ? 'Life Goals' : 'Report'}
+    </button>
+  ))}
+</div>
 
-          {quests.map((quest) => (
-            <div key={quest.id} className="glass-panel overflow-hidden border-border/60 hover:border-border transition-colors">
-              <div className="flex items-center gap-4 p-5 border-b border-border/40 bg-bg2/50">
-                <div className="w-10 h-10 rounded-lg bg-bg3 border border-border flex items-center justify-center text-xl">
-                  {quest.icon}
-                </div>
-                <div>
-                  <h2 className="sys-font-title text-sm tracking-wider text-text">{quest.name}</h2>
-                  <p className="sys-font-mono text-[11px] text-muted">{quest.sub}</p>
+{/* Tab Content */}
+<div className="space-y-3">
+  {activeTab !== 'report' && quests
+    .filter(q => q.category === activeTab)
+    .map((quest) => (
+      <QuestCard
+        key={quest.id}
+        name={quest.name}
+        sub={quest.sub}
+        icon={quest.icon}
+        tasks={quest.tasks}
+        completedTaskIds={completedTasks}
+        onToggleTask={handleToggle}
+      />
+    ))
+  }
+  {activeTab === 'report' && (
+    <div className="space-y-6">
+      {/* Weekly Consistency Panel */}
+      <div className="glass-panel p-6 border-purple/20">
+        <h3 className="sys-font-mono text-[12px] text-purple2 uppercase tracking-[2px] mb-4">
+          [ Weekly Consistency Tracker ]
+        </h3>
+        <div className="grid grid-cols-7 gap-2">
+          {getLast7Days().map((day) => {
+            const isActive = weekActivity[day.dateStr];
+            return (
+              <div key={day.dateStr} className="text-center">
+                <span className="sys-font-mono text-[10px] text-muted block mb-2">
+                  {day.dayName}
+                </span>
+                <div 
+                  className={`h-12 w-full rounded border flex items-center justify-center transition-all ${
+                    isActive 
+                      ? 'bg-green2/20 border-green text-green glow-green' 
+                      : 'bg-bg2 border-border/40 text-muted2'
+                  }`}
+                  title={day.dateStr}
+                >
+                  {isActive ? '✓' : '•'}
                 </div>
               </div>
-
-              <div className="p-4 space-y-2">
-                {quest.tasks.map((task) => (
-                  <label
-                    key={task.id}
-                    className={`flex items-start gap-4 p-3 rounded-lg cursor-pointer transition-all border ${
-                      isCompleted(task.id)
-                        ? 'bg-green2/5 border-green2/30 opacity-70'
-                        : 'bg-bg/40 border-border/20 hover:border-purple/40 hover:bg-bg2/30'
-                    }`}
-                  >
-                    <div className="pt-1">
-                      <input
-                        type="checkbox"
-                        checked={isCompleted(task.id)}
-                        onChange={() => handleToggle(task.id)}
-                        className="hidden"
-                      />
-                      <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${
-                        isCompleted(task.id) 
-                          ? 'bg-green2 border-green2 text-bg' 
-                          : 'border-border2 bg-bg hover:border-purple'
-                      }`}>
-                        {isCompleted(task.id) && <span className="text-[10px] font-bold">✓</span>}
-                      </div>
-                    </div>
-                    
-                    <div className="flex-1">
-                      <div className={`sys-font-body text-[15px] font-medium leading-tight ${
-                        isCompleted(task.id) ? 'line-through text-muted' : 'text-text'
-                      }`}>
-                        {task.name}
-                      </div>
-                      {task.note && (
-                        <div className="sys-font-mono text-[11px] text-muted mt-1 leading-tight">
-                          {task.note}
-                        </div>
-                      )}
-                    </div>
-                    
-                    <div className="sys-font-mono text-[11px] text-gold mt-1 whitespace-nowrap">
-                      +{task.exp} EXP
-                    </div>
-                  </label>
-                ))}
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
+      </div>
+
+      {/* Log Console Terminal */}
+      <div className="glass-panel p-6 border-purple/20">
+        <h3 className="sys-font-mono text-[12px] text-purple2 uppercase tracking-[2px] mb-4">
+          [ System Log Console ]
+        </h3>
+        <div className="max-h-[300px] overflow-y-auto space-y-2 bg-bg/50 border border-border/40 p-4 rounded font-mono text-[11px] leading-relaxed">
+          {logs.length === 0 ? (
+            <p className="text-muted italic">[ No system records registered yet ]</p>
+          ) : (
+            logs.map((log) => (
+              <div key={log.id} className="text-text/80 hover:text-text transition-colors">
+                <span className="text-muted select-none">
+                  [{new Date(log.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}]
+                </span>{' '}
+                <span className={log.text.startsWith('Completed') ? 'text-green' : 'text-purple2'}>
+                  {log.text}
+                </span>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+    </div>
+  )}
+</div>
+
+        
         
         <footer className="mt-20 text-center sys-font-mono text-[10px] text-muted2 tracking-[2px] uppercase pb-10">
           [ hunter's log · aria system · v1.0 ]

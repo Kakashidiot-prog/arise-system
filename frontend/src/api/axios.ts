@@ -15,6 +15,17 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response && error.response.status === 401) {
+      localStorage.removeItem('token');
+      window.location.href = '/login';
+    }
+    return Promise.reject(error);
+  }
+);
+
 export const authApi = {
   register: async (username: string, password: string) => {
     const res = await api.post('/auth/register', { username, password });
@@ -35,7 +46,7 @@ export const questsApi = {
 
 export const progressApi = {
   toggle: async (taskId: number) => {
-    const res = await api.post(`/progress/${taskId}/toggle`);
+    const res = await api.post('/progress/toggle', { taskId });
     return res.data;
   },
   getUserProgress: async () => {
@@ -44,6 +55,10 @@ export const progressApi = {
   },
   getStats: async () => {
     const res = await api.get('/progress/stats');
+    return res.data;
+  },
+  getWeekActivity: async () => {
+    const res = await api.get('/progress/week-activity');
     return res.data;
   },
 };

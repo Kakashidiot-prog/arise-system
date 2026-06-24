@@ -21,4 +21,9 @@ export class ProgressController {
   getStats(@Request() req) {
     return this.progressService.getUserStats(req.user.id);
   }
+
+  @Get('week-activity')
+  getWeekActivity(@Request() req) {
+    return this.progressService.getWeekActivity(req.user.id);
+  }
 }
