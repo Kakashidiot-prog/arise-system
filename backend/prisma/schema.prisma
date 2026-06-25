@@ -38,7 +38,7 @@ model Task {
   note     String?
   exp      Float
   questId  Int
-  quest    Quest      @relation(fields: [questId], references: [id])
+  quest    Quest      @relation(fields: [questId], references: [id], onDelete: Cascade)
   progress Progress[]
 }
 
@@ -47,8 +47,8 @@ model Progress {
   userId    Int
   taskId    Int
   completed Boolean @default(false)
-  user      User    @relation(fields: [userId], references: [id])
-  task      Task    @relation(fields: [taskId], references: [id])
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  task      Task    @relation(fields: [taskId], references: [id], onDelete: Cascade)
 
   @@unique([userId, taskId])
 }
