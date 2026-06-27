@@ -5,17 +5,21 @@ import { ValidationPipe } from '@nestjs/common';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  //Enable Global Val pipe\
   app.useGlobalPipes(
     new ValidationPipe({
-      whitelist: true, // strips out any extra properties not defined in the DTO
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
     }),
   );
 
   app.enableCors({
-    origin: 'http://localhost:5173', // Replace with frontend URL
+    origin: process.env.FRONTEND_URL ?? 'http://localhost:5173',
     credentials: true,
   });
-  await app.listen(process.env.Port ?? 3000);
+
+  const port = process.env.PORT ?? 3000;
+  await app.listen(port);
+  console.log(`Hunter's Log API running on port ${port}`);
 }
 bootstrap();

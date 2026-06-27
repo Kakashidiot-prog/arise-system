@@ -1,6 +1,8 @@
 import { Controller, Get, Post, Patch, Delete, Query, Body, Param, UseGuards, ParseIntPipe } from '@nestjs/common';
 import { QuestsService } from './quests.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { CreateQuestDto } from './dto/create-quest.dto';
+import { UpdateQuestDto } from './dto/update-quest.dto';
 
 @UseGuards(JwtAuthGuard)
 @Controller('quests')
@@ -16,13 +18,13 @@ export class QuestsController {
   }
 
   @Post()
-  create(@Body() body: any) {
-    return this.questsService.create(body);
+  create(@Body() dto: CreateQuestDto) {
+    return this.questsService.create(dto);
   }
 
   @Patch(':id')
-  update(@Param('id', ParseIntPipe) id: number, @Body() body: any) {
-    return this.questsService.update(id, body);
+  update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateQuestDto) {
+    return this.questsService.update(id, dto);
   }
 
   @Delete(':id')
