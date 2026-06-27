@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { authApi, setToken } from '../api/axios';
 
 export default function Register() {
@@ -7,6 +7,7 @@ export default function Register() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -15,17 +16,23 @@ export default function Register() {
     try {
       const data = await authApi.register(username, password);
       setToken(data.access_token);
-      window.location.href = '/dashboard';
-    } catch (err: unknown) {
-      if (err instanceof Error) setError(err.message);
-      else setError('Registration failed');
+      navigate('/dashboard');
+    } catch (err: any) {
+      const backendMessage = err.response?.data?.message;
+      if (Array.isArray(backendMessage)) {
+        setError(backendMessage.join(', '));
+      } else if (typeof backendMessage === 'string') {
+        setError(backendMessage);
+      } else {
+        setError('Registration failed. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
+    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden animate-fade-in">
       <div className="w-full max-w-[400px] glass-panel p-10 relative z-10 border-gold/30">
         <div className="sys-font-mono text-[10px] tracking-[3px] text-muted mb-2 animate-sys-blink uppercase">
           [ system initialization ]

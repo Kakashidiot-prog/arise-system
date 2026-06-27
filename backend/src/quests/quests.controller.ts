@@ -1,4 +1,4 @@
-import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Query, Body, Param, UseGuards, ParseIntPipe } from '@nestjs/common';
 import { QuestsService } from './quests.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
@@ -13,5 +13,20 @@ export class QuestsController {
       return this.questsService.findByCategory(category);
     }
     return this.questsService.findAll();
+  }
+
+  @Post()
+  create(@Body() body: any) {
+    return this.questsService.create(body);
+  }
+
+  @Patch(':id')
+  update(@Param('id', ParseIntPipe) id: number, @Body() body: any) {
+    return this.questsService.update(id, body);
+  }
+
+  @Delete(':id')
+  delete(@Param('id', ParseIntPipe) id: number) {
+    return this.questsService.delete(id);
   }
 }

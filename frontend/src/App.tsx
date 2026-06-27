@@ -3,6 +3,7 @@ import { getToken } from './api/axios';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
+import ManageQuests from './pages/ManageQuests';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const token = getToken();
@@ -21,6 +22,14 @@ export default function App() {
           element={
             <ProtectedRoute>
               <Dashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/manage-quests"
+          element={
+            <ProtectedRoute>
+              <ManageQuests />
             </ProtectedRoute>
           }
         />

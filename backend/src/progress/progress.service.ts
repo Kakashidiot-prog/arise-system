@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
@@ -143,5 +144,15 @@ export class ProgressService {
     }
 
     return activityMap;
+  }
+  @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
+  async resetDailyTasks() {
+    console.log('[System Scheduler] Waking up... Resetting all hunters tasks for the new day.'); 
+    try {
+      // Delete all rows in progress table (Uncheck)
+      await this.prisma.progress.deleteMany();
+    } catch (error) {
+      console.error('[System Scheduler] Critical Error running reset:', error);
+    }
   }
 }

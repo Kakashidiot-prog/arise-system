@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { removeToken, progressApi, questsApi, logsApi } from '../api/axios';
 import SystemHeader from '../components/SystemHeader';
 import StatCard from '../components/StatCard';
@@ -33,12 +34,12 @@ function getDailyQuote() {
 }
 
 function getRank(level: number): string {
-  if (level >= 35) return 'S-Rank';
-  if (level >= 25) return 'A-Rank';
-  if (level >= 18) return 'B-Rank';
-  if (level >= 10) return 'C-Rank';
-  if (level >= 5) return 'D-Rank';
-  return 'E-Rank';
+  if (level >= 35) return 'S-Rank · Shadow Monarch';
+  if (level >= 25) return 'A-Rank · Auth Conqueror';
+  if (level >= 18) return 'B-Rank · Backend Slayer';
+  if (level >= 10) return 'C-Rank · Full Stack Rising';
+  if (level >= 5) return 'D-Rank · Frontend Awakened';
+  return 'E-Rank · MERN Initiate';
 }
 
 function getLast7Days() {
@@ -77,6 +78,7 @@ export default function Dashboard() {
   const [activeTab, setActiveTab] = useState<'mind' | 'body' | 'life'  | 'report'>('mind');
   const [logs, setLogs] = useState<{ id: number; text: string; createdAt: string }[]>([]);
   const [weekActivity, setWeekActivity] = useState<Record<string, boolean>>({});
+  const [showLevelUp, setShowLevelUp] = useState<number | null>(null);
   const quote = getDailyQuote();
   
 
@@ -84,7 +86,7 @@ export default function Dashboard() {
     loadData();
   }, []);
 
-  const loadData = async () => {
+  const loadData = async (prevLevel?: number) => {
     try {
       const [statsData, questsData, progressData, logsData, activityData] = await Promise.all([
         progressApi.getStats(),
@@ -98,14 +100,19 @@ export default function Dashboard() {
       setCompletedTasks(progressData.map((p: { taskId: number }) => p.taskId));
       setLogs(logsData);
       setWeekActivity(activityData);
+
+      if (prevLevel !== undefined && statsData.level > prevLevel) {
+        setShowLevelUp(statsData.level);
+      }
     } catch (e) {
       console.error(e);
     }
   };
 
   const handleToggle = async (taskId: number) => {
+    const prevLevel = stats?.level;
     await progressApi.toggle(taskId);
-    loadData();
+    await loadData(prevLevel);
   };
 
   const handleLogout = () => {
@@ -116,7 +123,7 @@ export default function Dashboard() {
   const isCompleted = (taskId: number) => completedTasks.includes(taskId);
 
   return (
-    <div className="min-h-screen pb-20 relative z-10">
+    <div className="min-h-screen pb-20 relative z-10 animate-fade-in">
       <div className="max-w-[900px] mx-auto px-4">
         {stats && (
           <SystemHeader 
@@ -126,7 +133,13 @@ export default function Dashboard() {
           />
         )}
 
-        <div className="flex justify-end mb-4">
+        <div className="flex justify-between items-center mb-4">
+          <Link 
+            to="/manage-quests" 
+            className="sys-font-mono text-[10px] tracking-[2px] text-purple2 hover:text-purple3 transition-colors uppercase"
+          >
+            [ Manage Gates ]
+          </Link>
           <button 
             onClick={handleLogout} 
             className="sys-font-mono text-[10px] tracking-[2px] text-muted hover:text-red transition-colors uppercase"
@@ -255,6 +268,42 @@ export default function Dashboard() {
           [ hunter's log · aria system · v1.0 ]
         </footer>
       </div>
+
+      {/* SYSTEM NOTICE: LEVEL UP OVERLAY */}
+      {showLevelUp !== null && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-bg/85 backdrop-blur-md transition-opacity duration-300">
+          <div className="glass-panel p-8 max-w-md w-full mx-4 text-center border-purple glow-purple animate-pulse">
+            <div className="sys-font-mono text-[11px] tracking-[4px] text-purple2 mb-2 animate-sys-blink">
+              [ SYSTEM NOTICE ]
+            </div>
+            <h2 className="sys-font-title text-4xl md:text-5xl font-bold text-gold glow-text mb-4 tracking-wider">
+              LEVEL UP!
+            </h2>
+            <div className="w-16 h-[2px] bg-purple mx-auto mb-6" />
+            
+            <p className="sys-font-body text-base text-text/80 mb-6 leading-relaxed">
+              Your capabilities have evolved. Your hard work has been recognized by the System. You have successfully broken your limits.
+            </p>
+
+            <div className="bg-bg2/50 border border-border/40 rounded p-4 mb-6">
+              <div className="sys-font-mono text-xs text-muted mb-1 uppercase tracking-[1px]">New Status</div>
+              <div className="sys-font-title text-2xl font-bold text-text mb-1">
+                Level {showLevelUp}
+              </div>
+              <div className="sys-font-mono text-[11px] text-purple2 uppercase tracking-[2px]">
+                {getRank(showLevelUp)}
+              </div>
+            </div>
+
+            <button
+              onClick={() => setShowLevelUp(null)}
+              className="w-full py-3 bg-purple text-white font-bold sys-font-mono text-sm tracking-[3px] rounded hover:bg-purple2 transition-all uppercase shadow-[0_0_15px_rgba(122,95,255,0.3)]"
+            >
+              [ ARISE ]
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
