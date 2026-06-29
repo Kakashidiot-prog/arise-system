@@ -1,6 +1,7 @@
 import { Controller, Post, Get, Body, UseGuards, Request } from '@nestjs/common';
 import { ProgressService } from './progress.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { ToggleTaskDto } from './dto/toggle-task.dto';
 
 @UseGuards(JwtAuthGuard)
 @Controller('progress')
@@ -8,8 +9,8 @@ export class ProgressController {
   constructor(private progressService: ProgressService) {}
 
   @Post('toggle')
-  toggleTask(@Request() req, @Body('taskId') taskId: number) {
-    return this.progressService.toggleTask(req.user.id, taskId);
+  toggleTask(@Request() req, @Body() dto: ToggleTaskDto) {
+    return this.progressService.toggleTask(req.user.id, dto.taskId);
   }
 
   @Get()
