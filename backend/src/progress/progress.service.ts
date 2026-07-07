@@ -4,7 +4,7 @@ import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class ProgressService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
 
   async toggleTask(userId: number, taskId: number) {
     const task = await this.prisma.task.findUnique({ where: { id: taskId } });
@@ -147,10 +147,49 @@ export class ProgressService {
   }
   @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
   async resetDailyTasks() {
-    console.log('[System Scheduler] Waking up... Resetting all hunters tasks for the new day.'); 
+    console.log('[System Scheduler] Waking up... Resetting all hunters tasks for the new day.');
     try {
-      // Delete all rows in progress table (Uncheck)
-      await this.prisma.progress.deleteMany();
+      const completedDaily = await this.prisma.progress.findMany({
+        where: {
+          completed: true,
+          task: {
+            is: {
+              quest: {
+                is: {
+                  category: { in: ['body', 'life'] },
+                },
+              },
+            },
+          },
+        },
+      });
+
+      if (completedDaily.length > 0) {
+        await this.prisma.dailyLog.createMany({
+          data: completedDaily.map((p) => ({
+            userId: p.userId,
+            taskId: p.taskId,
+            completedDate: p.completedDate ?? new Date(),
+            exp: 0,
+          })),
+        });
+
+        await this.prisma.progress.deleteMany({
+          where: {
+            task: {
+              is: {
+                quest: {
+                  is: {
+                    category: { in: ['body', 'life'] },
+                  },
+                },
+              },
+            },
+          },
+        });
+
+        console.log(`[System Scheduler] Archived ${completedDaily.length} tasks, reset complete.`);
+      }
     } catch (error) {
       console.error('[System Scheduler] Critical Error running reset:', error);
     }

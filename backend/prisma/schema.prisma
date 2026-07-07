@@ -18,6 +18,7 @@ model User {
   createdAt      DateTime   @default(now())
   progress       Progress[]
   logs           Log[]
+  dailyLogs      DailyLog[]
 }
 
 model Quest {
@@ -32,25 +33,38 @@ model Quest {
 }
 
 model Task {
-  id       Int        @id @default(autoincrement())
-  key      String     @unique
-  name     String
-  note     String?
-  exp      Float
-  questId  Int
-  quest    Quest      @relation(fields: [questId], references: [id], onDelete: Cascade)
-  progress Progress[]
+  id        Int        @id @default(autoincrement())
+  key       String     @unique
+  name      String
+  note      String?
+  exp       Float
+  questId   Int
+  quest     Quest      @relation(fields: [questId], references: [id], onDelete: Cascade)
+  progress  Progress[]
+  dailyLogs DailyLog[]
 }
 
 model Progress {
-  id        Int     @id @default(autoincrement())
-  userId    Int
-  taskId    Int
-  completed Boolean @default(false)
-  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  task      Task    @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  id            Int       @id @default(autoincrement())
+  userId        Int
+  taskId        Int
+  completed     Boolean   @default(false)
+  completedDate DateTime?
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  task          Task      @relation(fields: [taskId], references: [id], onDelete: Cascade)
 
   @@unique([userId, taskId])
+}
+
+model DailyLog {
+  id            Int      @id @default(autoincrement())
+  userId        Int
+  taskId        Int
+  completedDate DateTime
+  exp           Float
+  createdAt     DateTime @default(now())
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  task          Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
 }
 
 model Log {
