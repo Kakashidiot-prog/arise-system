@@ -232,9 +232,9 @@ export default function ManageQuests() {
                     onChange={e => setCategory(e.target.value)}
                     className="w-full p-3 bg-[#080810] border border-border rounded focus:border-purple focus:outline-none text-text text-sm md:text-base transition-all"
                   >
-                    <option value="mind">Dev Skills</option>
-                    <option value="body">Physical</option>
-                    <option value="life">Life Goals</option>
+                    <option value="mind">Intelligence</option>
+                    <option value="body">Strength</option>
+                    <option value="life">Vitality</option>
                   </select>
                 </div>
 

@@ -186,7 +186,7 @@ export default function Dashboard() {
                   : 'text-muted hover:text-purple2'
               }`}
             >
-              {tab === 'mind' ? 'Dev Skills' : tab === 'body' ? 'Physical' : tab === 'life' ? 'Life Goals' : 'Report'}
+              {tab === 'mind' ? 'Intelligence' : tab === 'body' ? 'Strength' : tab === 'life' ? 'Vitality' : 'Report'}
             </button>
           ))}
         </div>

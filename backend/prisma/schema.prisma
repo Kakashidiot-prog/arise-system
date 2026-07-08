@@ -19,22 +19,28 @@ model User {
   progress       Progress[]
   logs           Log[]
   dailyLogs      DailyLog[]
+  quests         Quest[]    
 }
 
 model Quest {
   id       Int    @id @default(autoincrement())
-  key      String @unique
+  key      String
   name     String
   icon     String
   sub      String
   category String
   order    Int
+  userId   Int
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   tasks    Task[]
+
+  @@unique([userId, key])   // unique per user, not globally
+  @@index([userId])
 }
 
 model Task {
   id        Int        @id @default(autoincrement())
-  key       String     @unique
+  key       String
   name      String
   note      String?
   exp       Float
@@ -42,6 +48,8 @@ model Task {
   quest     Quest      @relation(fields: [questId], references: [id], onDelete: Cascade)
   progress  Progress[]
   dailyLogs DailyLog[]
+
+  @@unique([questId, key])  // unique per quest, not globally
 }
 
 model Progress {
