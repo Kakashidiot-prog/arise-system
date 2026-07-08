@@ -23,6 +23,6 @@ async function bootstrap() {
 
   const port = process.env.PORT ?? 3000;
   await app.listen(port);
-  console.log(`Hunter's Log API running on port ${port}`);
+  console.log(`ARISE API running on port ${port}`);
 }
 bootstrap();

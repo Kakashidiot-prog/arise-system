@@ -254,7 +254,7 @@ export default function Dashboard() {
                         </span>
                       </div>
                     ))
-                  )}
+                  )}  
                 </div>
               </div>
             </div>
@@ -262,7 +262,7 @@ export default function Dashboard() {
         </div>
 
         <footer className="mt-20 text-center sys-font-mono text-[10px] text-muted2 tracking-[2px] uppercase pb-10">
-          [ hunter's log · aria system · v1.0 ]
+          [ ARISE · aria system · v1.0 ]
         </footer>
       </div>
 

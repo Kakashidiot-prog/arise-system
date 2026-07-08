@@ -39,7 +39,7 @@ export default function Login() {
         </div>
         
         <h1 className="sys-font-title text-3xl font-bold mb-1 glow-text tracking-wider">
-          HUNTER'S LOG
+          ARISE
         </h1>
         <p className="sys-font-mono text-[11px] tracking-[2px] text-purple2 mb-8 uppercase">
           Sign In

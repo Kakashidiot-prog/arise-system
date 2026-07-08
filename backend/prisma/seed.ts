@@ -105,7 +105,7 @@ async function main() {
       icon: 'L1', sub: 'Priority one · life-changing EXP',
       category: 'life', order: 9,
       tasks: [
-        { key: 'l1t1', name: "Finish Hunter's Log full-stack app", note: 'This is your portfolio piece. Ship it.', exp: 3 },
+        { key: 'l1t1', name: "Finish ARISE full-stack app", note: 'This is your portfolio piece. Ship it.', exp: 3 },
         { key: 'l1t2', name: 'Push PGC-FIS to GitHub with documentation', note: 'Government system on your profile = credibility.', exp: 2 },
         { key: 'l1t3', name: 'Apply to 3 jobs per week', note: 'Junior dev, apprentice, intern-to-hire roles.', exp: 1 },
         { key: 'l1t4', name: 'Practice 2 interview questions per day', note: 'Arrays, objects, async — basics they always ask.', exp: 1 },
