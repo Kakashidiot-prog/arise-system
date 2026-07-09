@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -6,6 +7,7 @@ import SystemHeader from '../components/SystemHeader';
 import StatCard from '../components/StatCard';
 import ExpBar from '../components/ExpBar';
 import QuestCard from '../components/QuestCard';
+
 
 const SOLO_LEVELING_QUOTES = [
   { text: "I will keep leveling up until I reach the top.", speaker: "Sung Jinwoo" },
@@ -69,11 +71,16 @@ interface Stats {
   level: number;
   streak: number;
   username: string;
+  hasSeenWelcome: boolean;
 }
 
 export default function Dashboard() {
+  // 1. STATE
   const [activeTab, setActiveTab] = useState<'mind' | 'body' | 'life' | 'report'>('mind');
   const [showLevelUp, setShowLevelUp] = useState<number | null>(null);
+  const [showWelcome, setShowWelcome] = useState(false);
+
+  // 2. SETUP & QUERIES
   const quote = getDailyQuote();
   const queryClient = useQueryClient();
 
@@ -101,6 +108,28 @@ export default function Dashboard() {
     queryKey: ['weekActivity'],
     queryFn: progressApi.getWeekActivity,
   });
+
+  // 3. EFFECTS
+  useEffect(() => {
+    // If the database says they haven't seen it, show it!
+    if (stats && stats.hasSeenWelcome === false) {
+      setShowWelcome(true);
+    }
+  }, [stats]);
+
+  // 4. MUTATIONS & HANDLERS
+  const acceptWelcomeMutation = useMutation({
+    mutationFn: progressApi.acceptWelcome,
+    onSuccess: () => {
+      // Tell React Query to refresh the stats from the database
+      queryClient.invalidateQueries({ queryKey: ['stats'] });
+      setShowWelcome(false);
+    }
+  });
+
+  const handleAcceptWelcome = async () => {
+    acceptWelcomeMutation.mutate();
+  };
 
   const completedTasks = progressData.map((p) => p.taskId);
 
@@ -297,6 +326,35 @@ export default function Dashboard() {
           </div>
         </div>
       )}
+      {showWelcome && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-bg/90 backdrop-blur-md transition-
+                  opacity duration-300">
+              <div className="glass-panel p-8 max-w-md w-full mx-4 text-center border-purple glow-purple animate-
+                  fade-in">
+                <div className="sys-font-mono text-[11px] tracking-[4px] text-purple2 mb-2 animate-sys-blink
+                  uppercase">
+                  [ System Initialization ]
+                </div>
+                <h2 className="sys-font-title text-3xl md:text-4xl font-bold text-white mb-4 tracking-wider">
+                  WELCOME, PLAYER.
+                </h2>
+                <div className="w-16 h-[2px] bg-purple mx-auto mb-6" />
+                <p className="sys-font-body text-sm text-text/80 mb-6 leading-relaxed">
+                  You have met all the necessary requirements. The Secret Quest "Courage of the Weak" has been
+                    completed.
+                  <br /><br />
+                  You have earned the right to become a Player. Will you accept?
+                </p>
+                <button
+                  onClick={handleAcceptWelcome}
+                  className="w-full py-3 bg-purple text-white font-bold sys-font-mono text-sm tracking-[3px] rounded
+                  hover:bg-purple2 transition-all uppercase shadow-[0_0_15px_rgba(122,95,255,0.3)]"
+                >
+                  [ ACCEPT ]
+                </button>
+              </div>
+            </div>
+          )}
     </div>
   );
 }

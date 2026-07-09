@@ -1,7 +1,8 @@
-import { Controller, Post, Get, Body, UseGuards, Request } from '@nestjs/common';
+import { Controller, Post, Get, Body, UseGuards, Request, } from '@nestjs/common';
 import { ProgressService } from './progress.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { ToggleTaskDto } from './dto/toggle-task.dto';
+import { CurrentUser } from 'src/auth/current-user.decorator';
 
 @UseGuards(JwtAuthGuard)
 @Controller('progress')
@@ -26,5 +27,10 @@ export class ProgressController {
   @Get('week-activity')
   getWeekActivity(@Request() req) {
     return this.progressService.getWeekActivity(req.user.id);
+  }
+
+  @Post('welcome')
+  acceptWelcome(@CurrentUser() user: { id: number }) {
+    return this.progressService.acceptWelcome(user.id);
   }
 }

@@ -15,6 +15,7 @@ model User {
   level          Int        @default(1)
   streak         Int        @default(0)
   lastActiveDate String?
+  hasSeenWelcome Boolean    @default(false)
   createdAt      DateTime   @default(now())
   progress       Progress[]
   logs           Log[]

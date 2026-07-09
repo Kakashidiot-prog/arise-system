@@ -97,7 +97,14 @@ export class ProgressService {
   async getUserStats(userId: number) {
     return this.prisma.user.findUnique({
       where: { id: userId },
-      select: { exp: true, level: true, streak: true, username: true },
+      select: { exp: true, level: true, streak: true, username: true, hasSeenWelcome: true },
+    });
+  }
+
+  async acceptWelcome(userId: number) {
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: { hasSeenWelcome: true },
     });
   }
 

@@ -73,6 +73,10 @@ export const progressApi = {
     const res = await api.get('/progress/week-activity');
     return res.data;
   },
+  acceptWelcome: async () => {
+    const res = await api.post('/progress/welcome');
+    return res.data;
+  }
 };
 
 export const logsApi = {
