@@ -4,6 +4,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { CreateQuestDto } from './dto/create-quest.dto';
 import { UpdateQuestDto } from './dto/update-quest.dto';
+import { UpdateTaskDto } from './dto/update-task.dto';
 
 @UseGuards(JwtAuthGuard)
 @Controller('quests')
@@ -29,5 +30,10 @@ export class QuestsController {
   @Delete(':id')
   delete(@CurrentUser() user: { id: number }, @Param('id', ParseIntPipe) id: number) {
     return this.questsService.delete(user.id, id);
+  }
+
+  @Patch('task/:id')
+  taskUpdate(@CurrentUser() user: { id: number }, @Param('id', ParseIntPipe) id: number, @Body() dto: UpdateTaskDto) {
+    return this.questsService.taskUpdate(user.id, id, dto);
   }
 }

@@ -2,6 +2,7 @@ import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/commo
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateQuestDto } from './dto/create-quest.dto';
 import { UpdateQuestDto } from './dto/update-quest.dto';
+import { UpdateTaskDto } from '../quests/dto/update-task.dto';
 
 @Injectable()
 export class QuestsService {
@@ -50,6 +51,19 @@ export class QuestsService {
       where: { id },
       data: dto,
       include: { tasks: true },
+    });
+  }
+
+  async taskUpdate(userId: number, id: number, dto: UpdateTaskDto) {
+    const task = await this.prisma.task.findFirst({
+      where: { id, quest: { userId } },
+    });
+    if (!task) throw new NotFoundException(`Task #${id} not found`);
+
+    return this.prisma.task.update({
+      where: { id },
+      data: dto,
+      include: { quest: true },
     });
   }
 
