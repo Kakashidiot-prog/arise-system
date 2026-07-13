@@ -50,6 +50,10 @@ export const questsApi = {
     const res = await api.patch(`/quests/${id}`, data);
     return res.data;
   },
+  updateTask: async (id: number, data: any) => {
+    const res = await api.patch(`/quests/task/${id}`, data);
+    return res.data;
+  },
   delete: async (id: number) => {
     const res = await api.delete(`/quests/${id}`);
     return res.data;

@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { questsApi } from '../api/axios';
 import { Link } from 'react-router-dom';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 interface Task {
   id?: number;
@@ -22,8 +23,12 @@ interface Quest {
 }
 
 export default function ManageQuests() {
-  const [quests, setQuests] = useState<Quest[]>([]);
-  const [loading, setLoading] = useState(false);
+  const queryClient = useQueryClient();
+
+  const { data: quests = [], isLoading: loading } = useQuery<Quest[]>({
+    queryKey: ['quests'],
+    queryFn: questsApi.getAll,
+  });
   const [error, setError] = useState('');
 
   // Form State
@@ -36,23 +41,6 @@ export default function ManageQuests() {
 
   // Editing state
   const [editingId, setEditingId] = useState<number | null>(null);
-
-  useEffect(() => {
-    loadQuests();
-  }, []);
-
-  const loadQuests = async () => {
-    setLoading(true);
-    try {
-      const data = await questsApi.getAll();
-      setQuests(data);
-    } catch (err) {
-      console.error(err);
-      setError('Failed to load quests');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   // Add an empty task row to the form
   const handleAddTaskField = () => {
@@ -124,7 +112,7 @@ export default function ManageQuests() {
       }
 
       handleResetForm();
-      loadQuests();
+      queryClient.invalidateQueries({ queryKey: ['quests'] });
     } catch (err) {
       console.error(err);
       setError('Failed to save quest');
@@ -142,6 +130,27 @@ export default function ManageQuests() {
     setTasks([]);
   };
 
+  const updateTaskMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: Partial<Task> }) =>
+      questsApi.updateTask(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['quests'] });
+    },
+  });
+
+  const [editingTaskId, setEditingTaskId] = useState<number | null>(null);
+  const [taskDraft, setTaskDraft] = useState<{ name: string; note: string; exp: number; }>({ name: '', note: '', exp: 0 });
+
+  const handleTaskEditClick = (task: Task) => {
+    setEditingTaskId(task.id!);
+    setTaskDraft({ name: task.name, note: task.note, exp: task.exp });
+  };
+
+  const handleTaskSave = (taskId: number) => {
+    updateTaskMutation.mutateAsync({ id: taskId, data: taskDraft });
+    setEditingTaskId(null);
+  };
+
   const handleDeleteClick = async (id: number) => {
     if (!window.confirm('Are you absolutely sure? This will delete the Quest and all of its progress logs!')) {
       return;
@@ -149,7 +158,7 @@ export default function ManageQuests() {
     try {
       // DELETE (CRUD)
       await questsApi.delete(id);
-      loadQuests();
+      queryClient.invalidateQueries({ queryKey: ['quests'] });
     } catch (err) {
       console.error(err);
       setError('Failed to delete quest');
@@ -358,6 +367,52 @@ export default function ManageQuests() {
                         <p className="sys-font-mono text-xs text-muted uppercase tracking-[1px]">
                           {quest.sub} · {quest.tasks.length} tasks
                         </p>
+                        <div className="mt-3 space-y-2">
+  {quest.tasks.map(task => (
+    <div key={task.id} className="flex items-center gap-2 bg-bg/40 p-2 rounded border border-border/20">
+      {editingTaskId === task.id ? (
+        <>
+          <input
+            type="text"
+            value={taskDraft.name}
+            onChange={e => setTaskDraft(prev => ({ ...prev, name: e.target.value }))}
+            className="flex-1 p-1 bg-bg border border-border/40 rounded text-xs text-text"
+          />
+          <input
+            type="number"
+            step="0.25"
+            value={taskDraft.exp}
+            onChange={e => setTaskDraft(prev => ({ ...prev, exp: Number(e.target.value) }))}
+            className="w-16 p-1 bg-bg border border-border/40 rounded text-xs text-text"
+          />
+          <button
+            onClick={() => handleTaskSave(task.id!)}
+            className="text-xs text-green px-2 py-1 border border-green/40 rounded uppercase"
+          >
+            Save
+          </button>
+          <button
+            onClick={() => setEditingTaskId(null)}
+            className="text-xs text-muted px-2 py-1 border border-border rounded uppercase"
+          >
+            Cancel
+          </button>
+        </>
+      ) : (
+        <>
+          <span className="flex-1 text-xs text-text/80">{task.name}</span>
+          <span className="text-xs text-gold">{task.exp} EXP</span>
+          <button
+            onClick={() => handleTaskEditClick(task)}
+            className="text-xs text-muted hover:text-purple2 px-2 py-1 border border-border rounded uppercase"
+          >
+            Edit
+          </button>
+        </>
+      )}
+    </div>
+  ))}
+</div>  
                       </div>
 
                       <div className="flex items-center gap-3 w-full md:w-auto justify-end">
