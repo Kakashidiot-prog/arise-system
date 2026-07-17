@@ -63,7 +63,7 @@ interface Quest {
   icon: string;
   sub: string;
   category: string;
-  tasks: { id: number; key: string; name: string; note: string; exp: number }[];
+  tasks: { id: number; key: string; name: string; note: string; exp: number; targetValue?: number }[];
 }
 
 interface Stats {
@@ -72,6 +72,12 @@ interface Stats {
   streak: number;
   username: string;
   hasSeenWelcome: boolean;
+}
+
+interface ProgressRecord {
+  taskId: number;
+  completed: boolean;
+  currentValue: number;
 }
 
 export default function Dashboard() {
@@ -94,7 +100,7 @@ export default function Dashboard() {
     queryFn: questsApi.getAll,
   });
 
-  const { data: progressData = [] } = useQuery<{ taskId: number }[]>({
+  const { data: progressData = [] } = useQuery<ProgressRecord[]>({
     queryKey: ['progress'],
     queryFn: progressApi.getUserProgress,
   });
@@ -131,7 +137,13 @@ export default function Dashboard() {
     acceptWelcomeMutation.mutate();
   };
 
-  const completedTasks = progressData.map((p) => p.taskId);
+  const completedTasks = progressData.filter(p => p.completed).map((p) => p.taskId);
+  
+  // Build a progress map for the counter tasks
+  const progressMap = progressData.reduce((acc, p) => {
+    acc[p.taskId] = p.currentValue;
+    return acc;
+  }, {} as Record<number, number>);
 
   const toggleMutation = useMutation({
     mutationFn: (taskId: number) => progressApi.toggle(taskId),
@@ -146,6 +158,25 @@ export default function Dashboard() {
   const handleToggle = async (taskId: number) => {
     const prevLevel = stats?.level;
     await toggleMutation.mutateAsync(taskId);
+    const newStats = queryClient.getQueryData<Stats>(['stats']);
+    if (prevLevel !== undefined && newStats && newStats.level > prevLevel) {
+      setShowLevelUp(newStats.level);
+    }
+  };
+
+  const incrementMutation = useMutation({
+    mutationFn: ({ taskId, amount }: { taskId: number, amount: number }) => progressApi.increment(taskId, amount),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['stats'] });
+      queryClient.invalidateQueries({ queryKey: ['progress'] });
+      queryClient.invalidateQueries({ queryKey: ['logs'] });
+      queryClient.invalidateQueries({ queryKey: ['weekActivity'] });
+    },
+  });
+
+  const handleIncrement = async (taskId: number, amount: number) => {
+    const prevLevel = stats?.level;
+    await incrementMutation.mutateAsync({ taskId, amount });
     const newStats = queryClient.getQueryData<Stats>(['stats']);
     if (prevLevel !== undefined && newStats && newStats.level > prevLevel) {
       setShowLevelUp(newStats.level);
@@ -231,7 +262,9 @@ export default function Dashboard() {
                 icon={quest.icon}
                 tasks={quest.tasks}
                 completedTaskIds={completedTasks}
+                progressMap={progressMap}
                 onToggleTask={handleToggle}
+                onIncrementTask={handleIncrement}
               />
             ))}
 

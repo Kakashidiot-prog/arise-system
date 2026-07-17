@@ -35,7 +35,7 @@ export class QuestsService {
         order: dto.order,
         userId,
         tasks: dto.tasks
-          ? { create: dto.tasks.map((t) => ({ key: t.key, name: t.name, note: t.note, exp: t.exp })) }
+          ? { create: dto.tasks.map((t) => ({ key: t.key, name: t.name, note: t.note, exp: t.exp, taskType: t.taskType, targetValue: t.targetValue })) }
           : undefined,
       },
       include: { tasks: true },

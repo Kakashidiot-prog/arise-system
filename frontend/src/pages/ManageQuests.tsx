@@ -37,14 +37,14 @@ export default function ManageQuests() {
   const [sub, setSub] = useState('');
   const [category, setCategory] = useState('mind');
   const [order, setOrder] = useState(1);
-  const [tasks, setTasks] = useState<{ name: string; note: string; exp: number }[]>([]);
+  const [tasks, setTasks] = useState<{ name: string; note: string; exp: number; targetValue: number }[]>([]);
 
   // Editing state
   const [editingId, setEditingId] = useState<number | null>(null);
 
   // Add an empty task row to the form
   const handleAddTaskField = () => {
-    setTasks(prev => [...prev, { name: '', note: '', exp: 0.5 }]);
+    setTasks(prev => [...prev, { name: '', note: '', exp: 0.5, targetValue: 1 }]);
   };
 
   // Remove a specific task row from the form
@@ -53,7 +53,7 @@ export default function ManageQuests() {
   };
 
   // Update a specific task row input in React state
-  const handleTaskChange = (index: number, field: 'name' | 'note' | 'exp', value: string | number) => {
+  const handleTaskChange = (index: number, field: 'name' | 'note' | 'exp' | 'targetValue', value: string | number) => {
     setTasks(prev =>
       prev.map((task, i) => (i === index ? { ...task, [field]: value } : task))
     );
@@ -92,8 +92,10 @@ export default function ManageQuests() {
         tasks: tasks.map((t, idx) => ({
           key: `t_${uniqueKey}_${idx}`,
           name: t.name,
-          note: t.note || null,
+          note: t.note ? t.note : undefined, // Send undefined instead of null to pass @IsString() validation
           exp: Number(t.exp),
+          taskType: (t.targetValue && t.targetValue > 1) ? 'counter' : 'checkbox',
+          targetValue: t.targetValue ? Number(t.targetValue) : 1,
         })),
       };
 
@@ -113,9 +115,15 @@ export default function ManageQuests() {
 
       handleResetForm();
       queryClient.invalidateQueries({ queryKey: ['quests'] });
-    } catch (err) {
-      console.error(err);
-      setError('Failed to save quest');
+    } catch (err: any) {
+      console.error("FULL ERROR:", err);
+      // If the backend sends a specific 400 Validation Error, show it to the user so we know exactly which field failed!
+      const backendMessage = err.response?.data?.message;
+      if (backendMessage) {
+        setError(`Validation Error: ${Array.isArray(backendMessage) ? backendMessage.join(', ') : backendMessage}`);
+      } else {
+        setError('Failed to save quest. Check console.');
+      }
     }
   };
 
@@ -292,7 +300,7 @@ export default function ManageQuests() {
                               required
                             />
                           </div>
-                          <div className="grid grid-cols-2 gap-2">
+                          <div className="grid grid-cols-3 gap-2">
                             <input
                               type="text"
                               value={task.note}
@@ -307,6 +315,16 @@ export default function ManageQuests() {
                               onChange={e => handleTaskChange(index, 'exp', Number(e.target.value))}
                               className="w-full p-2 bg-bg border border-border/40 rounded text-xs text-text focus:outline-none focus:border-purple"
                               placeholder="EXP"
+                              required
+                            />
+                            <input
+                              type="number"
+                              min="1"
+                              value={task.targetValue}
+                              onChange={e => handleTaskChange(index, 'targetValue', Number(e.target.value))}
+                              className="w-full p-2 bg-bg border border-border/40 rounded text-xs text-text focus:outline-none focus:border-purple"
+                              placeholder="Goal (e.g. 100)"
+                              title="Set higher than 1 for a Progress Bar (Gym Reps)"
                               required
                             />
                           </div>
@@ -368,7 +386,7 @@ export default function ManageQuests() {
                           {quest.sub} · {quest.tasks.length} tasks
                         </p>
                         <div className="mt-3 space-y-2">
-  {quest.tasks.map(task => (
+                          {quest.tasks.map(task => (
     <div key={task.id} className="flex items-center gap-2 bg-bg/40 p-2 rounded border border-border/20">
       {editingTaskId === task.id ? (
         <>

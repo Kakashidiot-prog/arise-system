@@ -14,6 +14,11 @@ export class ProgressController {
     return this.progressService.toggleTask(req.user.id, dto.taskId);
   }
 
+  @Post('increment')
+  incrementTask(@Request() req, @Body() dto: { taskId: number, amount: number }) {
+    return this.progressService.incrementTask(req.user.id, dto.taskId, dto.amount);
+  }
+
   @Get()
   getProgress(@Request() req) {
     return this.progressService.getUserProgress(req.user.id);

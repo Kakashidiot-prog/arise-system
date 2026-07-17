@@ -15,6 +15,14 @@ export class CreateTaskDto {
   @IsNumber()
   @Min(0)
   exp: number;
+
+  @IsOptional()
+  @IsString()
+  taskType?: string;
+
+  @IsOptional()
+  @IsNumber()
+  targetValue?: number;
 }
 
 export class CreateQuestDto {

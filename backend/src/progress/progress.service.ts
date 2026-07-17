@@ -46,6 +46,47 @@ export class ProgressService {
     }
   }
 
+  async incrementTask(userId: number, taskId: number, amount: number) {
+    const task = await this.prisma.task.findUnique({ where: { id: taskId } });
+    if (!task) throw new NotFoundException('Task not Found');
+
+    let progress = await this.prisma.progress.findUnique({
+      where: { userId_taskId: { userId, taskId } },
+    });
+
+    if (!progress) {
+      progress = await this.prisma.progress.create({
+        data: { userId, taskId, completed: false, currentValue: 0 },
+      });
+    }
+
+    if (progress.completed) return { completed: true };
+
+    const newValue = progress.currentValue + amount;
+    const target = task.targetValue || 1;
+
+    if (newValue >= target) {
+
+      await this.prisma.progress.update({
+        where: { id: progress.id },
+        data: { currentValue: target, completed: true },
+      });
+      await this.updateUserExp(userId, task.exp);
+      await this.updateStreak(userId);
+      await this.prisma.log.create({
+        data: { userId, text: `Completed: ${task.name} (+${task.exp} EXP)` },
+      });
+      return { completed: true, currentValue: target };
+    } else {
+
+    await this.prisma.progress.update({
+      where: { id: progress.id },
+      data: { currentValue: newValue },
+    });
+    return { completed: false, currentValue: newValue };
+    }
+  }
+
   private async updateStreak(userId: number) {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) return;
@@ -90,7 +131,7 @@ export class ProgressService {
   async getUserProgress(userId: number) {
     return this.prisma.progress.findMany({
       where: { userId },
-      select: { taskId: true },
+      select: { taskId: true, completed: true, currentValue: true },
     });
   }
 

@@ -65,6 +65,10 @@ export const progressApi = {
     const res = await api.post('/progress/toggle', { taskId });
     return res.data;
   },
+  increment: async (taskId: number, amount: number) => {
+    const res = await api.post('/progress/increment', { taskId, amount });
+    return res.data
+  },
   getUserProgress: async () => {
     const res = await api.get('/progress');
     return res.data;

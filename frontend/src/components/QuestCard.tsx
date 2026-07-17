@@ -6,6 +6,7 @@ interface Task {
   name: string;
   note?: string;
   exp: number;
+  targetValue?: number;
 }
 
 interface QuestCardProps {
@@ -14,10 +15,12 @@ interface QuestCardProps {
   icon: string;
   tasks: Task[];
   completedTaskIds: number[];
+  progressMap?: Record<number, number>; // maps taskId to currentValue
   onToggleTask: (id: number) => void;
+  onIncrementTask?: (id: number, amount: number) => void;
 }
 
-export default function QuestCard({ name, sub, icon, tasks, completedTaskIds, onToggleTask }: QuestCardProps) {
+export default function QuestCard({ name, sub, icon, tasks, completedTaskIds, progressMap = {}, onToggleTask, onIncrementTask }: QuestCardProps) {
   const [isOpen, setIsOpen] = useState(false);
 
   // Scalable Logic: Calculate progress for THIS specific card
@@ -76,8 +79,11 @@ export default function QuestCard({ name, sub, icon, tasks, completedTaskIds, on
               name={task.name}
               note={task.note}
               exp={task.exp}
+              targetValue={task.targetValue}
+              currentValue={progressMap[task.id] || 0}
               isCompleted={completedTaskIds.includes(task.id)}
               onToggle={onToggleTask}
+              onIncrement={onIncrementTask}
             />
           ))}
         </div>
