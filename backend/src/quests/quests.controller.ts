@@ -5,6 +5,7 @@ import { CurrentUser } from '../auth/current-user.decorator';
 import { CreateQuestDto } from './dto/create-quest.dto';
 import { UpdateQuestDto } from './dto/update-quest.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
+import { GenerateQuestDto } from './dto/generate-quest.dto';
 
 @UseGuards(JwtAuthGuard)
 @Controller('quests')
@@ -20,6 +21,11 @@ export class QuestsController {
   @Post()
   create(@CurrentUser() user: { id: number }, @Body() dto: CreateQuestDto) {
     return this.questsService.create(user.id, dto);
+  }
+
+  @Post('generate')
+  generate(@CurrentUser() user: { id: number }, @Body() dto: GenerateQuestDto) {
+    return this.questsService.generateQuest(user.id, dto.goal);
   }
 
   @Patch(':id')

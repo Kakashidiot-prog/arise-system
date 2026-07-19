@@ -58,6 +58,10 @@ export const questsApi = {
     const res = await api.delete(`/quests/${id}`);
     return res.data;
   },
+  generate: async (goal: string) => {
+    const res = await api.post('/quests/generate', { goal });
+    return res.data;
+  }
 };
 
 export const progressApi = {

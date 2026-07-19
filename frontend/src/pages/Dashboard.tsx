@@ -37,11 +37,12 @@ function getDailyQuote() {
 
 function getRank(level: number): string {
   if (level >= 35) return 'S-Rank · Shadow Monarch';
-  if (level >= 25) return 'A-Rank · Auth Conqueror';
-  if (level >= 18) return 'B-Rank · Backend Slayer';
-  if (level >= 10) return 'C-Rank · Full Stack Rising';
-  if (level >= 5) return 'D-Rank · Frontend Awakened';
-  return 'E-Rank · MERN Initiate';
+  if (level >= 28) return 'S-Rank Hunter';
+  if (level >= 22) return 'A-Rank Hunter';
+  if (level >= 16) return 'B-Rank Hunter';
+  if (level >= 10) return 'C-Rank Hunter';
+  if (level >= 5) return 'D-Rank Hunter';
+  return 'E-Rank Hunter';
 }
 
 function getLast7Days() {
@@ -85,6 +86,8 @@ export default function Dashboard() {
   const [activeTab, setActiveTab] = useState<'mind' | 'body' | 'life' | 'report'>('mind');
   const [showLevelUp, setShowLevelUp] = useState<number | null>(null);
   const [showWelcome, setShowWelcome] = useState(false);
+  const [showGenerateModal, setShowGenerateModal] = useState(false);
+  const [goalInput, setGoalInput] = useState('');
 
   // 2. SETUP & QUERIES
   const quote = getDailyQuote();
@@ -145,35 +148,74 @@ export default function Dashboard() {
     return acc;
   }, {} as Record<number, number>);
 
-  const toggleMutation = useMutation({
-    mutationFn: (taskId: number) => progressApi.toggle(taskId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['stats'] });
-      queryClient.invalidateQueries({ queryKey: ['progress'] });
-      queryClient.invalidateQueries({ queryKey: ['logs'] });
-      queryClient.invalidateQueries({ queryKey: ['weekActivity'] });
-    },
-  });
+const toggleMutation = useMutation({
+  mutationFn: (taskId: number) => progressApi.toggle(taskId),
+  onMutate: async (taskId: number) => {
+    await queryClient.cancelQueries({ queryKey: ['progress'] });
+    const previousProgress = queryClient.getQueryData<ProgressRecord[]>(['progress']);
 
-  const handleToggle = async (taskId: number) => {
-    const prevLevel = stats?.level;
-    await toggleMutation.mutateAsync(taskId);
-    const newStats = queryClient.getQueryData<Stats>(['stats']);
-    if (prevLevel !== undefined && newStats && newStats.level > prevLevel) {
-      setShowLevelUp(newStats.level);
+    queryClient.setQueryData<ProgressRecord[]>(['progress'], (old = []) => {
+      const exists = old.find(p => p.taskId === taskId);
+      if (exists) {
+        return old.map(p => p.taskId === taskId ? { ...p, completed: !p.completed } : p);
+      }
+      return [...old, { taskId, completed: true, currentValue: 0 }];
+    });
+
+    return { previousProgress };
+  },
+  onError: (_err, _taskId, context) => {
+    if (context?.previousProgress) {
+      queryClient.setQueryData(['progress'], context.previousProgress);
     }
-  };
+  },
+  onSettled: () => {
+    queryClient.invalidateQueries({ queryKey: ['stats'] });
+    queryClient.invalidateQueries({ queryKey: ['progress'] });
+    queryClient.invalidateQueries({ queryKey: ['logs'] });
+    queryClient.invalidateQueries({ queryKey: ['weekActivity'] });
+  },
+});
+  
+  const handleToggle = async (taskId: number) => {
+  const prevLevel = stats?.level;
+  await toggleMutation.mutateAsync(taskId);
+  const newStats = queryClient.getQueryData<Stats>(['stats']);
+  if (prevLevel !== undefined && newStats && newStats.level > prevLevel) {
+    setShowLevelUp(newStats.level);
+  }
+};
 
-  const incrementMutation = useMutation({
-    mutationFn: ({ taskId, amount }: { taskId: number, amount: number }) => progressApi.increment(taskId, amount),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['stats'] });
-      queryClient.invalidateQueries({ queryKey: ['progress'] });
-      queryClient.invalidateQueries({ queryKey: ['logs'] });
-      queryClient.invalidateQueries({ queryKey: ['weekActivity'] });
-    },
-  });
+const incrementMutation = useMutation({
+  mutationFn: ({ taskId, amount }: { taskId: number; amount: number }) => progressApi.increment(taskId, amount),
+  onMutate: async ({ taskId, amount }) => {
+    await queryClient.cancelQueries({ queryKey: ['progress'] });
+    const previousProgress = queryClient.getQueryData<ProgressRecord[]>(['progress']);
 
+    queryClient.setQueryData<ProgressRecord[]>(['progress'], (old = []) => {
+      const exists = old.find(p => p.taskId === taskId);
+      if (exists) {
+        return old.map(p => p.taskId === taskId ? { ...p, currentValue: p.currentValue + amount } : p);
+      }
+      return [...old, { taskId, completed: false, currentValue: amount }];
+    });
+
+    return { previousProgress };
+  },
+  onError: (_err, _vars, context) => {
+    if (context?.previousProgress) {
+      queryClient.setQueryData(['progress'], context.previousProgress);
+    }
+  },
+  onSettled: () => {
+    queryClient.invalidateQueries({ queryKey: ['stats'] });
+    queryClient.invalidateQueries({ queryKey: ['progress'] });
+    queryClient.invalidateQueries({ queryKey: ['logs'] });
+    queryClient.invalidateQueries({ queryKey: ['weekActivity'] });
+  },
+});
+  
+  
   const handleIncrement = async (taskId: number, amount: number) => {
     const prevLevel = stats?.level;
     await incrementMutation.mutateAsync({ taskId, amount });
@@ -187,6 +229,24 @@ export default function Dashboard() {
     removeToken();
     window.location.href = '/login';
   };
+
+  const generateMutation = useMutation({
+  mutationFn: (goal: string) => questsApi.generate(goal),
+  onSuccess: (newQuest) => {
+    queryClient.invalidateQueries({ queryKey: ['quests'] });
+    setShowGenerateModal(false);
+    setGoalInput('');
+    if (newQuest?.category) {
+      setActiveTab(newQuest.category);
+    }
+  },
+});
+
+const handleGenerate = () => {
+  if (goalInput.trim()) {
+    generateMutation.mutate(goalInput);
+  }
+};
 
   return (
     <div className="min-h-screen pb-20 relative z-10 animate-fade-in">
@@ -234,8 +294,14 @@ export default function Dashboard() {
             — {quote.speaker}
           </p>
         </div>
-
+        <button
+            onClick={() => setShowGenerateModal(true)}
+            className="w-full mb-6 py-2 bg-purple/10 border border-purple/40 text-purple2 sys-font-mono text-xs tracking-[2px] rounded hover:bg-purple/20 transition-all uppercase"
+          >
+            [ + Generate Quest ]
+          </button>
         <div className="flex gap-[2px] mb-6 bg-panel border border-border rounded-lg p-1">
+          
           {(['mind', 'body', 'life', 'report'] as const).map((tab) => (
             <button
               key={tab}
@@ -388,6 +454,42 @@ export default function Dashboard() {
               </div>
             </div>
           )}
+       {showGenerateModal && (
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-bg/90 backdrop-blur-md">
+    <div className="glass-panel p-8 max-w-md w-full mx-4 border-purple glow-purple">
+      <div className="sys-font-mono text-[11px] tracking-[4px] text-purple2 mb-4 uppercase">
+        [ Quest Generator ]
+      </div>
+      <p className="sys-font-body text-sm text-text/80 mb-4">
+        What do you want to achieve?
+      </p>
+      <textarea
+        value={goalInput}
+        onChange={e => setGoalInput(e.target.value)}
+        placeholder="e.g., I want to learn Python"
+        className="w-full p-3 bg-[#080810] border border-border rounded text-text text-sm mb-4 focus:border-purple focus:outline-none"
+        disabled={generateMutation.isPending}
+      />
+      <div className="flex gap-2">
+        <button
+          onClick={handleGenerate}
+          disabled={generateMutation.isPending || !goalInput.trim()}
+          className="flex-1 py-3 bg-purple text-white font-bold sys-font-mono text-sm rounded hover:bg-purple2 transition-all uppercase disabled:opacity-50"
+        >
+          {generateMutation.isPending ? 'Forging Quest...' : '[ Generate ]'}
+        </button>
+        <button
+          onClick={() => setShowGenerateModal(false)}
+          disabled={generateMutation.isPending}
+          className="py-3 px-4 bg-bg2 border border-border text-muted rounded sys-font-mono text-sm uppercase"
+        >
+          Cancel
+        </button>
+      </div>
     </div>
+  </div>
+)}     
+    </div>
+    
   );
 }
