@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateQuestDto } from './dto/create-quest.dto';
 import { UpdateQuestDto } from './dto/update-quest.dto';
@@ -77,29 +77,40 @@ export class QuestsService {
 
   async generateQuest(userId: number, goal: string) {
     const prompt = `Break this goal into a quest with 5-8 tasks that progress from beginner to advanced. Goal: "${goal}".
-  Respond ONLY with valid JSON, no markdown, in this exact shape:
-  {
-    "name": "Quest Name",
-    "icon": "emoji",
-    "category": "mind" | "body" | "life",
-    "tasks": [{ "name": "task name", "note": "short tip", "exp": 1 }]
-    }`;
+Respond ONLY with valid JSON, no markdown, in this exact shape:
+{
+  "name": "Quest Name",
+  "icon": "emoji",
+  "category": "mind" | "body" | "life",
+  "tasks": [{ "name": "task name", "note": "short tip", "exp": 1 }]
+}`;
 
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-        }),
+    let parsed: any;
+
+    try {
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }],
+          }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (data.error) {
+        throw new Error(`Gemini API error: ${data.error.message}`);
       }
-    );
 
-    const data = await response.json();
-    const text = data.candidates[0].content.parts[0].text;
-    const cleaned = text.replace(/```json|```/g, '').trim();
-    const parsed = JSON.parse(cleaned);
+      const text = data.candidates[0].content.parts[0].text;
+      const cleaned = text.replace(/```json|```/g, '').trim();
+      parsed = JSON.parse(cleaned);
+    } catch (err) {
+      throw new BadRequestException('Failed to generate quest. The AI response was invalid — please try rephrasing your goal and try again.');
+    }
 
     const uniqueKey = `ai_${Date.now()}`;
     return this.create(userId, {
@@ -118,3 +129,4 @@ export class QuestsService {
     });
   }
 }
+

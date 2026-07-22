@@ -93,12 +93,12 @@ export default function Dashboard() {
   const quote = getDailyQuote();
   const queryClient = useQueryClient();
 
-  const { data: stats } = useQuery<Stats>({
+  const { data: stats, isLoading: statsLoading } = useQuery<Stats>({
     queryKey: ['stats'],
     queryFn: progressApi.getStats,
   });
 
-  const { data: quests = [] } = useQuery<Quest[]>({
+  const { data: quests = [], isLoading: questsLoading } = useQuery<Quest[]>({
     queryKey: ['quests'],
     queryFn: questsApi.getAll,
   });
@@ -247,6 +247,16 @@ const handleGenerate = () => {
     generateMutation.mutate(goalInput);
   }
 };
+
+  if (statsLoading || questsLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="sys-font-mono text-purple2 text-sm tracking-[3px] uppercase animate-pulse">
+          [ Loading System... ]
+        </div>
+      </div>
+    );
+}
 
   return (
     <div className="min-h-screen pb-20 relative z-10 animate-fade-in">
