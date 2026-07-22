@@ -109,6 +109,7 @@ Respond ONLY with valid JSON, no markdown, in this exact shape:
       const cleaned = text.replace(/```json|```/g, '').trim();
       parsed = JSON.parse(cleaned);
     } catch (err) {
+      console.error('GENERATE QUESTS ERROR:', err);
       throw new BadRequestException('Failed to generate quest. The AI response was invalid — please try rephrasing your goal and try again.');
     }
 
