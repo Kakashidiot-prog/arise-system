@@ -193,25 +193,39 @@ export class ProgressService {
 
     return activityMap;
   }
-  @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
-  async resetDailyTasks() {
-    console.log('[System Scheduler] Waking up... Resetting all hunters tasks for the new day.');
+  async runDailyResetForUser(userId: number) {
     try {
+      const today = new Date().toISOString().slice(0, 10);
+      
+      // Find all quests that are daily, belong to user, and haven't been reset today
+      const questsToReset = await this.prisma.quest.findMany({
+        where: {
+          userId,
+          isDaily: true,
+          OR: [
+            { lastResetDate: null },
+            { lastResetDate: { not: today } }
+          ]
+        },
+        select: { id: true }
+      });
+
+      if (questsToReset.length === 0) return false;
+
+      const questIds = questsToReset.map(q => q.id);
+
+      // Find all completed progress for these quests
       const completedDaily = await this.prisma.progress.findMany({
         where: {
+          userId,
           completed: true,
           task: {
-            is: {
-              quest: {
-                is: {
-                  category: { in: ['body', 'life'] },
-                },
-              },
-            },
+            questId: { in: questIds }
           },
         },
       });
 
+      // Archive them
       if (completedDaily.length > 0) {
         await this.prisma.dailyLog.createMany({
           data: completedDaily.map((p) => ({
@@ -221,25 +235,31 @@ export class ProgressService {
             exp: 0,
           })),
         });
-
-        await this.prisma.progress.deleteMany({
-          where: {
-            task: {
-              is: {
-                quest: {
-                  is: {
-                    category: { in: ['body', 'life'] },
-                  },
-                },
-              },
-            },
-          },
-        });
-
-        console.log(`[System Scheduler] Archived ${completedDaily.length} tasks, reset complete.`);
       }
+
+      // Delete the progress to "uncheck" them
+      await this.prisma.progress.deleteMany({
+        where: {
+          userId,
+          task: {
+            questId: { in: questIds }
+          }
+        },
+      });
+
+      // Update lastResetDate
+      await this.prisma.quest.updateMany({
+        where: {
+          id: { in: questIds }
+        },
+        data: { lastResetDate: today }
+      });
+
+      console.log(`[System Scheduler] Lazy Reset complete for user ${userId}. Resetted ${questIds.length} quests.`);
+      return true; // Indicates reset occurred
     } catch (error) {
-      console.error('[System Scheduler] Critical Error running reset:', error);
+      console.error('[System Scheduler] Critical Error running lazy reset:', error);
+      return false;
     }
   }
 }

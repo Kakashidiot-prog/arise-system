@@ -7,15 +7,26 @@ import { UpdateQuestDto } from './dto/update-quest.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
 import { GenerateQuestDto } from './dto/generate-quest.dto';
 
+import { ProgressService } from '../progress/progress.service';
+
 @UseGuards(JwtAuthGuard)
 @Controller('quests')
 export class QuestsController {
-  constructor(private questsService: QuestsService) {}
+  constructor(
+    private questsService: QuestsService,
+    private progressService: ProgressService
+  ) {}
 
   @Get()
-  findAll(@CurrentUser() user: { id: number }, @Query('category') category?: string) {
-    if (category) return this.questsService.findByCategory(user.id, category);
-    return this.questsService.findAll(user.id);
+  async findAll(@CurrentUser() user: { id: number }, @Query('category') category?: string) {
+    const resetOccurred = await this.progressService.runDailyResetForUser(user.id);
+    let quests;
+    if (category) {
+      quests = await this.questsService.findByCategory(user.id, category);
+    } else {
+      quests = await this.questsService.findAll(user.id);
+    }
+    return { resetOccurred, quests };
   }
 
   @Post()
@@ -41,5 +52,10 @@ export class QuestsController {
   @Patch('task/:id')
   taskUpdate(@CurrentUser() user: { id: number }, @Param('id', ParseIntPipe) id: number, @Body() dto: UpdateTaskDto) {
     return this.questsService.taskUpdate(user.id, id, dto);
+  }
+
+  @Post(':id/tasks')
+  addTask(@CurrentUser() user: { id: number }, @Param('id', ParseIntPipe) id: number, @Body() dto: any) {
+    return this.questsService.addTask(user.id, id, dto);
   }
 }

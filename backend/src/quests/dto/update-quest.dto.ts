@@ -20,4 +20,7 @@ export class UpdateQuestDto {
   @IsOptional()
   @IsInt()
   order?: number;
+
+  @IsOptional()
+  isDaily?: boolean;
 }

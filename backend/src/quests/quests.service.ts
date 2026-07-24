@@ -33,6 +33,7 @@ export class QuestsService {
         sub: dto.sub,
         category: dto.category,
         order: dto.order,
+        isDaily: dto.isDaily || false,
         userId,
         tasks: dto.tasks
           ? { create: dto.tasks.map((t) => ({ key: t.key, name: t.name, note: t.note, exp: t.exp, taskType: t.taskType, targetValue: t.targetValue })) }
@@ -75,13 +76,30 @@ export class QuestsService {
     return this.prisma.quest.delete({ where: { id } });
   }
 
+async addTask(userId: number, questId: number, dto: { key: string; name: string; note?: string; exp: number; taskType: string; targetValue?: number }) {
+  const quest = await this.prisma.quest.findFirst({
+    where: { id: questId, userId },
+  });
+  if (!quest) throw new NotFoundException(`Quest #${questId} not found`);
+
+  return this.prisma.task.create({
+    data: {
+      ...dto,
+      questId,
+    },
+    include: { quest: true },
+  });
+}
+
   async generateQuest(userId: number, goal: string) {
     const prompt = `Break this goal into a quest with 5-8 tasks that progress from beginner to advanced. Goal: "${goal}".
+Assign a difficulty rank (E, D, C, B, A) to each task and strictly convert it to EXP: (E=1, D=2, C=3, B=5, A=10). You are FORBIDDEN from assigning raw EXP numbers over 10.
 Respond ONLY with valid JSON, no markdown, in this exact shape:
 {
   "name": "Quest Name",
-  "icon": "emoji",
+  "icon": "",
   "category": "mind" | "body" | "life",
+  "isDaily": true | false,
   "tasks": [{ "name": "task name", "note": "short tip", "exp": 1 }]
 }`;
 
@@ -120,6 +138,7 @@ Respond ONLY with valid JSON, no markdown, in this exact shape:
       icon: parsed.icon,
       sub: `AI Generated · +${parsed.tasks.reduce((s: number, t: any) => s + t.exp, 0)} EXP`,
       category: parsed.category,
+      isDaily: parsed.isDaily || false,
       order: 999,
       tasks: parsed.tasks.map((t: any, i: number) => ({
         key: `t_${uniqueKey}_${i}`,

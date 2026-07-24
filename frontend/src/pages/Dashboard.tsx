@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { removeToken, progressApi, questsApi, logsApi } from '../api/axios';
+import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer } from 'recharts';
 import SystemHeader from '../components/SystemHeader';
 import StatCard from '../components/StatCard';
 import ExpBar from '../components/ExpBar';
@@ -52,7 +53,8 @@ function getLast7Days() {
     d.setDate(d.getDate() - i);
     const dateStr = d.toISOString().slice(0, 10);
     const dayName = d.toLocaleDateString('en-US', { weekday: 'short' });
-    result.push({ dateStr, dayName });
+    const monthDay = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    result.push({ dateStr, dayName, monthDay });
   }
   return result;
 }
@@ -89,6 +91,8 @@ export default function Dashboard() {
   const [showGenerateModal, setShowGenerateModal] = useState(false);
   const [goalInput, setGoalInput] = useState('');
 
+  const [showResetNotification, setShowResetNotification] = useState(false);
+
   // 2. SETUP & QUERIES
   const quote = getDailyQuote();
   const queryClient = useQueryClient();
@@ -98,10 +102,12 @@ export default function Dashboard() {
     queryFn: progressApi.getStats,
   });
 
-  const { data: quests = [], isLoading: questsLoading } = useQuery<Quest[]>({
+  const { data: questsData, isLoading: questsLoading } = useQuery<{resetOccurred: boolean, quests: Quest[]}>({
     queryKey: ['quests'],
     queryFn: questsApi.getAll,
   });
+
+  const quests = questsData?.quests || [];
 
   const { data: progressData = [] } = useQuery<ProgressRecord[]>({
     queryKey: ['progress'],
@@ -126,6 +132,12 @@ export default function Dashboard() {
     }
   }, [stats]);
 
+  useEffect(() => {
+    if (questsData?.resetOccurred) {
+      setShowResetNotification(true);
+    }
+  }, [questsData?.resetOccurred]);
+
   // 4. MUTATIONS & HANDLERS
   const acceptWelcomeMutation = useMutation({
     mutationFn: progressApi.acceptWelcome,
@@ -147,6 +159,27 @@ export default function Dashboard() {
     acc[p.taskId] = p.currentValue;
     return acc;
   }, {} as Record<number, number>);
+
+   // --- STAT DISTRIBUTION LOGIC ---
+      const statTotals = { mind: 0, body: 0, life: 0 };
+
+   quests.forEach(quest => {
+        quest.tasks.forEach(task => {
+          // If the user completed this task, add its EXP to the quest's category
+          if (completedTasks.includes(task.id)) {
+            if (quest.category === 'mind') statTotals.mind += task.exp;
+            if (quest.category === 'body') statTotals.body += task.exp;
+            if (quest.category === 'life') statTotals.life += task.exp;
+          }
+        });
+      });
+      
+   const radarData = [
+        { subject: 'Intelligence', amount: statTotals.mind, fullMark: Math.max(10, statTotals.mind + 5) },
+        { subject: 'Strength', amount: statTotals.body, fullMark: Math.max(10, statTotals.body + 5) },
+        { subject: 'Vitality', amount: statTotals.life, fullMark: Math.max(10, statTotals.life + 5) },
+      ];
+
 
 const toggleMutation = useMutation({
   mutationFn: (taskId: number) => progressApi.toggle(taskId),
@@ -335,7 +368,6 @@ const handleGenerate = () => {
                 key={quest.id}
                 name={quest.name}
                 sub={quest.sub}
-                icon={quest.icon}
                 tasks={quest.tasks}
                 completedTaskIds={completedTasks}
                 progressMap={progressMap}
@@ -346,6 +378,39 @@ const handleGenerate = () => {
 
           {activeTab === 'report' && (
             <div className="space-y-6">
+              {/* --- NEW STATUS RADAR CHART --- */}
+              <div className="glass-panel p-6 border-purple/20">
+                <h3 className="sys-font-mono text-[12px] text-purple2 uppercase tracking-[2px] mb-4">
+                  [ Stat Distribution ]
+                </h3>
+                <div className="h-[250px] w-full flex items-center justify-center">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <RadarChart cx="50%" cy="50%" outerRadius="70%" data={radarData}>
+                      <PolarGrid stroke="rgba(122,95,255,0.2)" />
+                      <PolarAngleAxis 
+                        dataKey="subject" 
+                        tick={{ fill: '#8075FF', fontSize: 10, fontFamily: 'monospace', textAnchor: 'middle' }} 
+                      />
+                      <PolarRadiusAxis 
+                        angle={30} 
+                        domain={[0, 'dataMax']} 
+                        tick={false} 
+                        axisLine={false} 
+                      />
+                      <Radar
+                        name="Player Stats"
+                        dataKey="amount"
+                        stroke="#7A5FFF"
+                        strokeWidth={2}
+                        fill="#7A5FFF"
+                        fillOpacity={0.4}
+                      />
+                    </RadarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+              {/* ------------------------------ */}
+
               <div className="glass-panel p-6 border-purple/20">
                 <h3 className="sys-font-mono text-[12px] text-purple2 uppercase tracking-[2px] mb-4">
                   [ Weekly Consistency Tracker ]
@@ -356,7 +421,8 @@ const handleGenerate = () => {
                     return (
                       <div key={day.dateStr} className="text-center">
                         <span className="sys-font-mono text-[10px] text-muted block mb-2">
-                          {day.dayName}
+                          <span className="block text-purple2">{day.dayName}</span>
+                          <span className="text-[8px] opacity-70 tracking-tighter">{day.monthDay}</span>
                         </span>
                         <div
                           className={`h-12 w-full rounded border flex items-center justify-center transition-all ${
@@ -376,22 +442,30 @@ const handleGenerate = () => {
 
               <div className="glass-panel p-6 border-purple/20">
                 <h3 className="sys-font-mono text-[12px] text-purple2 uppercase tracking-[2px] mb-4">
-                  [ System Log Console ]
+                  [ SYSTEM EVENT ARCHIVE ]
                 </h3>
                 <div className="max-h-[300px] overflow-y-auto space-y-2 bg-bg/50 border border-border/40 p-4 rounded font-mono text-[11px] leading-relaxed">
                   {logs.length === 0 ? (
                     <p className="text-muted italic">[ No system records registered yet ]</p>
                   ) : (
-                    logs.map((log) => (
-                      <div key={log.id} className="text-text/80 hover:text-text transition-colors">
-                        <span className="text-muted select-none">
-                          [{new Date(log.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}]
-                        </span>{' '}
-                        <span className={log.text.startsWith('Completed') ? 'text-green' : 'text-purple2'}>
-                          {log.text}
-                        </span>
-                      </div>
-                    ))
+                    logs.map((log) => {
+                      const logDate = new Date(log.createdAt);
+                      const isToday = new Date().toDateString() === logDate.toDateString();
+                      const dateDisplay = isToday 
+                        ? logDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                        : logDate.toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+                      return (
+                        <div key={log.id} className="text-text/80 hover:text-text transition-colors border-b border-border/20 pb-2 mb-2 last:border-0 last:pb-0 last:mb-0">
+                          <span className="text-muted select-none whitespace-nowrap">
+                            [{dateDisplay}]
+                          </span>{' '}
+                          <span className={log.text.startsWith('Completed') ? 'text-green' : 'text-purple2'}>
+                            {log.text}
+                          </span>
+                        </div>
+                      );
+                    })
                   )}  
                 </div>
               </div>
@@ -499,6 +573,30 @@ const handleGenerate = () => {
     </div>
   </div>
 )}     
+      {showResetNotification && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-bg/90 backdrop-blur-md transition-opacity duration-300">
+          <div className="glass-panel p-8 max-w-md w-full mx-4 text-center border-purple glow-purple animate-fade-in">
+            <div className="sys-font-mono text-[11px] tracking-[4px] text-purple2 mb-2 animate-sys-blink uppercase">
+              [ SYSTEM NOTIFICATION ]
+            </div>
+            <h2 className="sys-font-title text-3xl md:text-4xl font-bold text-white mb-4 tracking-wider">
+              A NEW DAY BEGINS
+            </h2>
+            <div className="w-16 h-[2px] bg-purple mx-auto mb-6" />
+            <p className="sys-font-body text-sm text-text/80 mb-6 leading-relaxed">
+              Your Daily Quests have been reset. Yesterday's progress has been logged into the System Archive. 
+              <br /><br />
+              Will you grow stronger today?
+            </p>
+            <button
+              onClick={() => setShowResetNotification(false)}
+              className="w-full py-3 bg-purple text-white font-bold sys-font-mono text-sm tracking-[3px] rounded hover:bg-purple2 transition-all uppercase shadow-[0_0_15px_rgba(122,95,255,0.3)]"
+            >
+              [ ACCEPT ]
+            </button>
+          </div>
+        </div>
+      )}
     </div>
     
   );

@@ -45,6 +45,9 @@ export class CreateQuestDto {
   order: number;
 
   @IsOptional()
+  isDaily?: boolean;
+
+  @IsOptional()
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => CreateTaskDto)

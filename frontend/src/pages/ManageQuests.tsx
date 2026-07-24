@@ -19,24 +19,29 @@ interface Quest {
   sub: string;
   category: string;
   order: number;
+  isDaily: boolean;
   tasks: Task[];
 }
 
 export default function ManageQuests() {
   const queryClient = useQueryClient();
 
-  const { data: quests = [], isLoading: loading } = useQuery<Quest[]>({
+  const { data, isLoading: loading } = useQuery<{ resetOccured: boolean, quests: Quest[] }>({
     queryKey: ['quests'],
     queryFn: questsApi.getAll,
   });
+
+  const quests = data?.quests || [];
+
   const [error, setError] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
 
   // Form State
   const [name, setName] = useState('');
-  const [icon, setIcon] = useState('');
   const [sub, setSub] = useState('');
   const [category, setCategory] = useState('mind');
   const [order, setOrder] = useState(1);
+  const [isDaily, setIsDaily] = useState(false);
   const [tasks, setTasks] = useState<{ name: string; note: string; exp: number; targetValue: number }[]>([]);
 
   // Editing state
@@ -44,7 +49,7 @@ export default function ManageQuests() {
 
   // Add an empty task row to the form
   const handleAddTaskField = () => {
-    setTasks(prev => [...prev, { name: '', note: '', exp: 0.5, targetValue: 1 }]);
+    setTasks(prev => [...prev, { name: '', note: '', exp: 1, targetValue: 1 }]);
   };
 
   // Remove a specific task row from the form
@@ -61,10 +66,10 @@ export default function ManageQuests() {
 
   const handleResetForm = () => {
     setName('');
-    setIcon('');
     setSub('');
     setCategory('mind');
     setOrder(quests.length + 1);
+    setIsDaily(false);
     setTasks([]);
     setEditingId(null);
     setError('');
@@ -79,16 +84,18 @@ export default function ManageQuests() {
       return;
     }
 
+    setIsSaving(true);
     try {
       const uniqueKey = `q_${Date.now()}`;
       
       const payload = {
         key: uniqueKey,
         name,
-        icon: icon || '⚡',
+        icon: '', // Deprecated field, sending empty
         sub: sub || `+${tasks.reduce((sum, t) => sum + t.exp, 0)} EXP`,
         category,
         order: Number(order),
+        isDaily,
         tasks: tasks.map((t, idx) => ({
           key: `t_${uniqueKey}_${idx}`,
           name: t.name,
@@ -107,6 +114,7 @@ export default function ManageQuests() {
           sub: payload.sub,
           category: payload.category,
           order: payload.order,
+          isDaily: payload.isDaily,
         });
       } else {
         // CREATE (CRUD)
@@ -124,16 +132,18 @@ export default function ManageQuests() {
       } else {
         setError('Failed to save quest. Check console.');
       }
+    } finally {
+      setIsSaving(false);
     }
   };
 
   const handleEditClick = (quest: Quest) => {
     setEditingId(quest.id);
     setName(quest.name);
-    setIcon(quest.icon);
     setSub(quest.sub);
     setCategory(quest.category);
     setOrder(quest.order);
+    setIsDaily(quest.isDaily || false);
     // When editing, we edit the quest metadata. Task editing is separate.
     setTasks([]);
   };
@@ -219,17 +229,7 @@ export default function ManageQuests() {
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="sys-font-mono text-xs tracking-[2px] text-muted uppercase mb-2 block">Icon</label>
-                    <input
-                      type="text"
-                      value={icon}
-                      onChange={e => setIcon(e.target.value)}
-                      className="w-full p-3 bg-[#080810] border border-border rounded focus:border-purple focus:outline-none text-text text-sm md:text-base transition-all"
-                      placeholder="e.g., ⚡ or React"
-                    />
-                  </div>
+                <div className="grid grid-cols-1 gap-3">
                   <div>
                     <label className="sys-font-mono text-xs tracking-[2px] text-muted uppercase mb-2 block">Order</label>
                     <input
@@ -266,6 +266,25 @@ export default function ManageQuests() {
                   />
                 </div>
 
+                {/* Custom System Checkbox */}
+                <div 
+                  className="flex items-center gap-3 cursor-pointer group"
+                  onClick={() => setIsDaily(!isDaily)}
+                >
+                  <div className={`w-5 h-5 border rounded flex items-center justify-center transition-all ${
+                    isDaily 
+                      ? 'bg-purple/20 border-purple text-purple2 glow-purple' 
+                      : 'bg-bg border-border/40 text-transparent group-hover:border-purple/50'
+                  }`}>
+                    <span className="text-[10px] leading-none">✓</span>
+                  </div>
+                  <span className={`sys-font-mono text-xs tracking-[2px] uppercase select-none transition-colors ${
+                    isDaily ? 'text-purple2' : 'text-muted group-hover:text-text/80'
+                  }`}>
+                    [ Daily Quest (Resets at midnight) ]
+                  </span>
+                </div>
+
                 {/* DYNAMIC TASK SUB-FORM (Only available on Create) */}
                 {!editingId && (
                   <div className="pt-5 border-t border-border/40">
@@ -274,7 +293,7 @@ export default function ManageQuests() {
                       <button
                         type="button"
                         onClick={handleAddTaskField}
-                        className="sys-font-mono text-xs bg-purple/20 border border-purple hover:bg-purple text-text px-3 py-1.5 rounded transition-colors uppercase"
+                        className="sys-font-mono text-xs bg-purple/20 border border-purple hover:bg-purple text-text px-3 py-1.5 rounded active:scale-95 transition-all uppercase"
                       >
                         + Add Task
                       </button>
@@ -308,15 +327,18 @@ export default function ManageQuests() {
                               className="w-full p-2 bg-bg border border-border/40 rounded text-xs text-text focus:outline-none focus:border-purple"
                               placeholder="Note (optional)"
                             />
-                            <input
-                              type="number"
-                              step="0.25"
+                            <select
                               value={task.exp}
                               onChange={e => handleTaskChange(index, 'exp', Number(e.target.value))}
                               className="w-full p-2 bg-bg border border-border/40 rounded text-xs text-text focus:outline-none focus:border-purple"
-                              placeholder="EXP"
                               required
-                            />
+                            >
+                              <option value="1">E-Rank (1 EXP)</option>
+                              <option value="2">D-Rank (2 EXP)</option>
+                              <option value="3">C-Rank (3 EXP)</option>
+                              <option value="5">B-Rank (5 EXP)</option>
+                              <option value="10">A-Rank (10 EXP)</option>
+                            </select>
                             <input
                               type="number"
                               min="1"
@@ -337,15 +359,17 @@ export default function ManageQuests() {
                 <div className="flex gap-2 pt-4">
                   <button
                     type="submit"
-                    className="flex-1 py-3 bg-purple text-white font-bold sys-font-mono text-sm tracking-[2px] rounded hover:bg-purple2 transition-all uppercase shadow-[0_0_15px_rgba(122,95,255,0.2)]"
+                    disabled={isSaving}
+                    className="flex-1 py-3 bg-purple text-white font-bold sys-font-mono text-sm tracking-[2px] rounded hover:bg-purple2 active:scale-[0.98] transition-all uppercase shadow-[0_0_15px_rgba(122,95,255,0.2)] disabled:opacity-50 disabled:active:scale-100"
                   >
-                    {editingId ? 'Save Edits' : 'Register Quest'}
+                    {isSaving ? '[ Processing... ]' : editingId ? '[ Save Edits ]' : '[ Register Quest ]'}
                   </button>
                   {editingId && (
                     <button
                       type="button"
                       onClick={handleResetForm}
-                      className="py-3 px-4 bg-bg2 border border-border text-muted hover:text-text rounded sys-font-mono text-sm transition-all uppercase"
+                      disabled={isSaving}
+                      className="py-3 px-4 bg-bg2 border border-border text-muted hover:text-text rounded sys-font-mono text-sm active:scale-[0.98] transition-all uppercase disabled:opacity-50"
                     >
                       Cancel
                     </button>
@@ -376,14 +400,13 @@ export default function ManageQuests() {
                     <div key={quest.id} className="p-4 bg-bg2 border border-border/40 rounded flex flex-col md:flex-row justify-between items-start md:items-center gap-4 hover:border-purple/30 transition-all">
                       <div>
                         <div className="flex items-center gap-3 mb-1.5">
-                          <span className="text-xl">{quest.icon}</span>
                           <h3 className="font-bold text-text text-base md:text-lg sys-font-title tracking-wide">{quest.name}</h3>
                           <span className="sys-font-mono text-[10px] tracking-[1px] bg-purple/20 border border-purple/40 text-purple2 px-2.5 py-0.5 rounded uppercase">
                             {quest.category}
                           </span>
                         </div>
                         <p className="sys-font-mono text-xs text-muted uppercase tracking-[1px]">
-                          {quest.sub} · {quest.tasks.length} tasks
+                          {quest.sub} · {quest.tasks.length} tasks {quest.isDaily ? '· [ DAILY ]' : ''}
                         </p>
                         <div className="mt-3 space-y-2">
                           {quest.tasks.map(task => (
@@ -396,13 +419,17 @@ export default function ManageQuests() {
             onChange={e => setTaskDraft(prev => ({ ...prev, name: e.target.value }))}
             className="flex-1 p-1 bg-bg border border-border/40 rounded text-xs text-text"
           />
-          <input
-            type="number"
-            step="0.25"
+          <select
             value={taskDraft.exp}
             onChange={e => setTaskDraft(prev => ({ ...prev, exp: Number(e.target.value) }))}
-            className="w-16 p-1 bg-bg border border-border/40 rounded text-xs text-text"
-          />
+            className="w-24 p-1 bg-bg border border-border/40 rounded text-xs text-text"
+          >
+            <option value="1">E (1)</option>
+            <option value="2">D (2)</option>
+            <option value="3">C (3)</option>
+            <option value="5">B (5)</option>
+            <option value="10">A (10)</option>
+          </select>
           <button
             onClick={() => handleTaskSave(task.id!)}
             className="text-xs text-green px-2 py-1 border border-green/40 rounded uppercase"
@@ -436,13 +463,13 @@ export default function ManageQuests() {
                       <div className="flex items-center gap-3 w-full md:w-auto justify-end">
                         <button
                           onClick={() => handleEditClick(quest)}
-                          className="sys-font-mono text-xs tracking-[1px] text-muted hover:text-purple2 border border-border hover:border-purple px-4 py-2 rounded transition-all uppercase"
+                          className="sys-font-mono text-xs tracking-[1px] text-muted hover:text-purple2 border border-border hover:border-purple px-4 py-2 rounded active:scale-95 transition-all uppercase"
                         >
                           Edit
                         </button>
                         <button
                           onClick={() => handleDeleteClick(quest.id)}
-                          className="sys-font-mono text-xs tracking-[1px] text-muted hover:text-red border border-border hover:border-red px-4 py-2 rounded transition-all uppercase"
+                          className="sys-font-mono text-xs tracking-[1px] text-muted hover:text-red border border-border hover:border-red px-4 py-2 rounded active:scale-95 transition-all uppercase"
                         >
                           Delete
                         </button>

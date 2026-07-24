@@ -24,16 +24,18 @@ model User {
 }
 
 model Quest {
-  id       Int    @id @default(autoincrement())
-  key      String
-  name     String
-  icon     String
-  sub      String
-  category String
-  order    Int
-  userId   Int
-  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  tasks    Task[]
+  id            Int      @id @default(autoincrement())
+  key           String
+  name          String
+  icon          String
+  sub           String
+  category      String
+  order         Int
+  isDaily       Boolean  @default(false)
+  lastResetDate String?
+  userId        Int
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tasks         Task[]
 
   @@unique([userId, key])   // unique per user, not globally
   @@index([userId])

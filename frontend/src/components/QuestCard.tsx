@@ -12,7 +12,6 @@ interface Task {
 interface QuestCardProps {
   name: string;
   sub: string;
-  icon: string;
   tasks: Task[];
   completedTaskIds: number[];
   progressMap?: Record<number, number>; // maps taskId to currentValue
@@ -20,7 +19,7 @@ interface QuestCardProps {
   onIncrementTask?: (id: number, amount: number) => void;
 }
 
-export default function QuestCard({ name, sub, icon, tasks, completedTaskIds, progressMap = {}, onToggleTask, onIncrementTask }: QuestCardProps) {
+export default function QuestCard({ name, sub, tasks, completedTaskIds, progressMap = {}, onToggleTask, onIncrementTask }: QuestCardProps) {
   const [isOpen, setIsOpen] = useState(false);
 
   // Scalable Logic: Calculate progress for THIS specific card
@@ -37,10 +36,6 @@ export default function QuestCard({ name, sub, icon, tasks, completedTaskIds, pr
         className="quest-header flex items-center gap-4 p-4 cursor-pointer select-none"
         onClick={() => setIsOpen(!isOpen)}
       >
-        <div className="quest-icon w-9 h-9 bg-bg2 border border-border flex items-center justify-center text-muted text-xs sys-font-mono rounded">
-          {icon}
-        </div>
-        
         <div className="quest-meta flex-1">
           <div className={`quest-name sys-font-title text-sm font-bold tracking-wide ${
             isAllDone ? 'text-green line-through' : 'text-text'
