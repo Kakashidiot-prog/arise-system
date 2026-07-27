@@ -66,6 +66,7 @@ interface Quest {
   icon: string;
   sub: string;
   category: string;
+  isDaily?: boolean;
   tasks: { id: number; key: string; name: string; note: string; exp: number; targetValue?: number }[];
 }
 
@@ -368,6 +369,7 @@ const handleGenerate = () => {
                 key={quest.id}
                 name={quest.name}
                 sub={quest.sub}
+                isDaily={quest.isDaily}
                 tasks={quest.tasks}
                 completedTaskIds={completedTasks}
                 progressMap={progressMap}

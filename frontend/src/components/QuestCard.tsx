@@ -12,6 +12,7 @@ interface Task {
 interface QuestCardProps {
   name: string;
   sub: string;
+  isDaily?: boolean;
   tasks: Task[];
   completedTaskIds: number[];
   progressMap?: Record<number, number>; // maps taskId to currentValue
@@ -19,7 +20,7 @@ interface QuestCardProps {
   onIncrementTask?: (id: number, amount: number) => void;
 }
 
-export default function QuestCard({ name, sub, tasks, completedTaskIds, progressMap = {}, onToggleTask, onIncrementTask }: QuestCardProps) {
+export default function QuestCard({ name, sub, isDaily, tasks, completedTaskIds, progressMap = {}, onToggleTask, onIncrementTask }: QuestCardProps) {
   const [isOpen, setIsOpen] = useState(false);
 
   // Scalable Logic: Calculate progress for THIS specific card
@@ -46,11 +47,18 @@ export default function QuestCard({ name, sub, tasks, completedTaskIds, progress
         </div>
 
         {/* Status Badge */}
-        <span className={`quest-badge text-[9px] px-3 py-1 rounded uppercase sys-font-mono border ${
-          isAllDone ? 'bg-green/10 text-green border-green/30' : 'bg-purple/10 text-purple2 border-purple/40'
-        }`}>
-          {isAllDone ? 'Cleared' : 'Active'}
-        </span>
+         <div className="flex items-center gap-2">
+              {isDaily && (
+                <span className="quest-badge text-[9px] px-2 py-0.5 rounded bg-blue/10 text-blue border border-blue/30 sys-font-mono uppercase">
+                  Daily
+                </span>
+              )}
+              <span className={`quest-badge text-[9px] px-3 py-1 rounded uppercase sys-font-mono border ${
+                isAllDone ? 'bg-green/10 text-green border-green/30' : 'bg-purple/10 text-purple2 border-purple/40'
+              }`}>
+                {isAllDone ? (isDaily ? 'Completed Today' : 'Cleared') : 'Active'}
+              </span>
+            </div> 
       </div>
 
       {/* Body (Expandable) */}

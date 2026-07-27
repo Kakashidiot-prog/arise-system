@@ -25,6 +25,9 @@ export class QuestsService {
   }
 
   async create(userId: number, dto: CreateQuestDto) {
+    const isDaily = dto.isDaily || false;
+    const lastResetDate = isDaily ? new Date().toISOString().split('T')[0] : null;
+
     return this.prisma.quest.create({
       data: {
         key: dto.key,
@@ -33,7 +36,8 @@ export class QuestsService {
         sub: dto.sub,
         category: dto.category,
         order: dto.order,
-        isDaily: dto.isDaily || false,
+        isDaily,
+        lastResetDate,
         userId,
         tasks: dto.tasks
           ? { create: dto.tasks.map((t) => ({ key: t.key, name: t.name, note: t.note, exp: t.exp, taskType: t.taskType, targetValue: t.targetValue })) }

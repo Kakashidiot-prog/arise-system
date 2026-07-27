@@ -9,6 +9,8 @@ interface Task {
   name: string;
   note: string;
   exp: number;
+  taskType?: string;
+  targetValue?: number;
 }
 
 interface Quest {
@@ -156,6 +158,50 @@ export default function ManageQuests() {
     },
   });
 
+  const addTaskMutation = useMutation({
+    mutationFn: ({ questId, data }: { questId: number; data: Partial<Task> }) =>
+      questsApi.addTask(questId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['quests'] });
+    },
+  });
+
+  const [addingTaskToQuestId, setAddingTaskToQuestId] = useState<number | null>(null);
+  const [newTaskDraft, setNewTaskDraft] = useState('');
+
+  const handleConfirmNewTask = (questId: number) => {
+    if (!newTaskDraft.trim()) return;
+    
+    addTaskMutation.mutate({
+      questId,
+      data: {
+        key: `t_${Date.now()}`,
+        name: newTaskDraft.trim(),
+        note: '',
+        exp: 1, 
+        taskType: 'checkbox',
+        targetValue: 1
+      }
+    });
+    setAddingTaskToQuestId(null);
+    setNewTaskDraft('');
+  };
+
+  const [deletingQuestId, setDeletingQuestId] = useState<number | null>(null);
+  
+  const confirmDelete = async () => {
+    if (!deletingQuestId) return;
+    try {
+      await questsApi.delete(deletingQuestId);
+      queryClient.invalidateQueries({ queryKey: ['quests'] });
+    } catch (err) {
+      console.error(err);
+      setError('Failed to delete quest');
+    } finally {
+      setDeletingQuestId(null);
+    }
+  };
+
   const [editingTaskId, setEditingTaskId] = useState<number | null>(null);
   const [taskDraft, setTaskDraft] = useState<{ name: string; note: string; exp: number; }>({ name: '', note: '', exp: 0 });
 
@@ -169,18 +215,8 @@ export default function ManageQuests() {
     setEditingTaskId(null);
   };
 
-  const handleDeleteClick = async (id: number) => {
-    if (!window.confirm('Are you absolutely sure? This will delete the Quest and all of its progress logs!')) {
-      return;
-    }
-    try {
-      // DELETE (CRUD)
-      await questsApi.delete(id);
-      queryClient.invalidateQueries({ queryKey: ['quests'] });
-    } catch (err) {
-      console.error(err);
-      setError('Failed to delete quest');
-    }
+  const handleDeleteClick = (id: number) => {
+    setDeletingQuestId(id);
   };
 
   return (
@@ -458,6 +494,37 @@ export default function ManageQuests() {
     </div>
   ))}
 </div>  
+                            {addingTaskToQuestId === quest.id ? (
+                              <div className="mt-2 flex items-center gap-2 bg-bg/40 p-2 rounded border border-purple/40 glow-purple">
+                                <input
+                                  type="text"
+                                  value={newTaskDraft}
+                                  onChange={(e) => setNewTaskDraft(e.target.value)}
+                                  placeholder="Enter task name..."
+                                  className="flex-1 p-1 bg-[#080810] border border-border/40 rounded text-xs text-text focus:outline-none focus:border-purple"
+                                  autoFocus
+                                />
+                                <button
+                                  onClick={() => handleConfirmNewTask(quest.id)}
+                                  className="text-xs text-green hover:text-green2 px-2 py-1 border border-green/40 hover:border-green rounded uppercase transition-colors"
+                                >
+                                  Add
+                                </button>
+                                <button
+                                  onClick={() => { setAddingTaskToQuestId(null); setNewTaskDraft(''); }}
+                                  className="text-xs text-muted hover:text-red px-2 py-1 border border-border hover:border-red rounded uppercase transition-colors"
+                                >
+                                  Cancel
+                                </button>
+                              </div>
+                            ) : (
+                              <button
+                                onClick={() => setAddingTaskToQuestId(quest.id)}
+                                className="w-full mt-2 py-1.5 border border-dashed border-purple/40 text-purple2 hover:bg-purple/10 hover:border-purple rounded sys-font-mono text-[10px] uppercase tracking-[2px] transition-all"
+                              >
+                                + Add New Task
+                              </button>
+                            )}
                       </div>
 
                       <div className="flex items-center gap-3 w-full md:w-auto justify-end">
@@ -484,6 +551,38 @@ export default function ManageQuests() {
         </div>
 
       </div>
+
+      {/* Custom Delete Confirmation Modal */}
+      {deletingQuestId !== null && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-bg/90 backdrop-blur-md animate-fade-in">
+          <div className="glass-panel p-8 max-w-md w-full mx-4 text-center border-red shadow-[0_0_20px_rgba(255,79,79,0.3)]">
+            <div className="sys-font-mono text-[11px] tracking-[4px] text-red mb-2 uppercase animate-pulse">
+              [ SYSTEM WARNING ]
+            </div>
+            <h2 className="sys-font-title text-2xl font-bold text-white mb-4 tracking-wider">
+              ERASE QUEST DATA?
+            </h2>
+            <div className="w-16 h-[2px] bg-red mx-auto mb-6" />
+            <p className="sys-font-body text-sm text-text/80 mb-8 leading-relaxed">
+              Are you absolutely sure? This action is irreversible. All progress logs, EXP, and history associated with this quest will be permanently purged from the system.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={confirmDelete}
+                className="flex-1 py-3 bg-red/10 border border-red text-red hover:bg-red hover:text-white font-bold sys-font-mono text-sm tracking-[2px] rounded transition-all uppercase"
+              >
+                [ Purge Data ]
+              </button>
+              <button
+                onClick={() => setDeletingQuestId(null)}
+                className="flex-1 py-3 bg-bg2 border border-border text-muted hover:text-text rounded sys-font-mono text-sm tracking-[2px] transition-all uppercase"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
