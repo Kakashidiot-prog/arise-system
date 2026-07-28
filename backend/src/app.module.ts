@@ -8,6 +8,7 @@ import { AuthModule } from './auth/auth.module';
 import { QuestsModule } from './quests/quests.module';
 import { ProgressModule } from './progress/progress.module';
 import { LogsModule } from './logs/logs.module';
+import { TasksModule } from './tasks/tasks.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { LogsModule } from './logs/logs.module';
     QuestsModule,
     ProgressModule,
     LogsModule,
+    TasksModule,
   ],
   providers: [
     {
