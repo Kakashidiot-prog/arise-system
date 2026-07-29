@@ -150,14 +150,67 @@ export default function ManageQuests() {
     setTasks([]);
   };
 
-  const updateTaskMutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: Partial<Task> }) =>
-      questsApi.updateTask(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['quests'] });
-    },
-  });
+const updateTaskMutation = useMutation({
+  mutationFn: ({ id, data }: { id: number; data: Partial<Task> }) =>
+    questsApi.updateTask(id, data),
+  onMutate: async ({ id, data }) => {
+    await queryClient.cancelQueries({ queryKey: ['quests'] });
+    const previousQuests = queryClient.getQueryData(['quests']);
 
+    queryClient.setQueryData(['quests'], (old: any) => {
+      if (!old) return old;
+      return {
+        ...old,
+        quests: old.quests.map((quest: Quest) => ({
+          ...quest,
+          tasks: quest.tasks.map((task: Task) =>
+            task.id === id ? { ...task, ...data } : task
+          ),
+        })),
+      };
+    });
+
+    return { previousQuests };
+  },
+  onError: (_err, _vars, context: any) => {
+    if (context?.previousQuests) {
+      queryClient.setQueryData(['quests'], context.previousQuests);
+    }
+  },
+  onSettled: () => {
+    queryClient.invalidateQueries({ queryKey: ['quests'] });
+  },
+});
+  
+  const deleteTaskMutation = useMutation({
+  mutationFn: (id: number) => questsApi.deleteTask(id),
+  onMutate: async (id: number) => {
+    await queryClient.cancelQueries({ queryKey: ['quests'] });
+    const previousQuests = queryClient.getQueryData(['quests']);
+
+    queryClient.setQueryData(['quests'], (old: any) => {
+      if (!old) return old;
+      return {
+        ...old,
+        quests: old.quests.map((quest: Quest) => ({
+          ...quest,
+          tasks: quest.tasks.filter((task: Task) => task.id !== id),
+        })),
+      };
+    });
+
+    return { previousQuests };
+  },
+  onError: (_err, _id, context: any) => {
+    if (context?.previousQuests) {
+      queryClient.setQueryData(['quests'], context.previousQuests);
+    }
+  },
+  onSettled: () => {
+    queryClient.invalidateQueries({ queryKey: ['quests'] });
+  },
+  });
+  
   const addTaskMutation = useMutation({
     mutationFn: ({ questId, data }: { questId: number; data: Partial<Task> }) =>
       questsApi.addTask(questId, data),
@@ -188,6 +241,7 @@ export default function ManageQuests() {
   };
 
   const [deletingQuestId, setDeletingQuestId] = useState<number | null>(null);
+  const [deletingTaskId, setDeletingTaskId] = useState<number | null>(null);
   
   const confirmDelete = async () => {
     if (!deletingQuestId) return;
@@ -201,6 +255,13 @@ export default function ManageQuests() {
       setDeletingQuestId(null);
     }
   };
+
+  const confirmDeleteTask = () => {
+    if (!deletingTaskId) return;
+    deleteTaskMutation.mutate(deletingTaskId);
+    setDeletingTaskId(null);
+  };
+  
 
   const [editingTaskId, setEditingTaskId] = useState<number | null>(null);
   const [taskDraft, setTaskDraft] = useState<{ name: string; note: string; exp: number; }>({ name: '', note: '', exp: 0 });
@@ -446,54 +507,60 @@ export default function ManageQuests() {
                         </p>
                         <div className="mt-3 space-y-2">
                           {quest.tasks.map(task => (
-    <div key={task.id} className="flex items-center gap-2 bg-bg/40 p-2 rounded border border-border/20">
-      {editingTaskId === task.id ? (
-        <>
-          <input
-            type="text"
-            value={taskDraft.name}
-            onChange={e => setTaskDraft(prev => ({ ...prev, name: e.target.value }))}
-            className="flex-1 p-1 bg-bg border border-border/40 rounded text-xs text-text"
-          />
-          <select
-            value={taskDraft.exp}
-            onChange={e => setTaskDraft(prev => ({ ...prev, exp: Number(e.target.value) }))}
-            className="w-24 p-1 bg-bg border border-border/40 rounded text-xs text-text"
-          >
-            <option value="1">E (1)</option>
-            <option value="2">D (2)</option>
-            <option value="3">C (3)</option>
-            <option value="5">B (5)</option>
-            <option value="10">A (10)</option>
-          </select>
-          <button
-            onClick={() => handleTaskSave(task.id!)}
-            className="text-xs text-green px-2 py-1 border border-green/40 rounded uppercase"
-          >
-            Save
-          </button>
-          <button
-            onClick={() => setEditingTaskId(null)}
-            className="text-xs text-muted px-2 py-1 border border-border rounded uppercase"
-          >
-            Cancel
-          </button>
-        </>
-      ) : (
-        <>
-          <span className="flex-1 text-xs text-text/80">{task.name}</span>
-          <span className="text-xs text-gold">{task.exp} EXP</span>
-          <button
-            onClick={() => handleTaskEditClick(task)}
-            className="text-xs text-muted hover:text-purple2 px-2 py-1 border border-border rounded uppercase"
-          >
-            Edit
-          </button>
-        </>
-      )}
-    </div>
-  ))}
-</div>  
+                        <div key={task.id} className="flex items-center gap-2 bg-bg/40 p-2 rounded border border-border/20">
+                          {editingTaskId === task.id ? (
+                          <>
+                          <input
+                          type="text"
+                          value={taskDraft.name}
+                          onChange={e => setTaskDraft(prev => ({ ...prev, name: e.target.value }))}
+                          className="flex-1 p-1 bg-bg border border-border/40 rounded text-xs text-text"
+                          />
+                         <select
+                          value={taskDraft.exp}
+                          onChange={e => setTaskDraft(prev => ({ ...prev, exp: Number(e.target.value) }))}
+                          className="w-24 p-1 bg-bg border border-border/40 rounded text-xs text-text"
+                           >
+                          <option value="1">E (1)</option>
+                          <option value="2">D (2)</option>
+                          <option value="3">C (3)</option>
+                          <option value="5">B (5)</option>
+                          <option value="10">A (10)</option>
+                        </select>
+                        <button
+                        onClick={() => handleTaskSave(task.id!)}
+                        className="text-xs text-green px-2 py-1 border border-green/40 rounded uppercase"
+                          >
+                           Save
+                        </button>
+                        <button
+                        onClick={() => setEditingTaskId(null)}
+                        className="text-xs text-muted px-2 py-1 border border-border rounded uppercase"
+                          >
+                           Cancel
+                        </button>
+                           </>
+                          ) : (
+                          <>
+                        <span className="flex-1 text-xs text-text/80">{task.name}</span>
+                        <span className="text-xs text-gold">{task.exp} EXP</span>
+                        <button
+                          onClick={() => handleTaskEditClick(task)}
+                          className="text-xs text-muted hover:text-purple2 px-2 py-1 border border-border rounded uppercase"
+                          >
+                          Edit
+                        </button>
+                        <button
+                         onClick={() => setDeletingTaskId(task.id!)}
+                         className="text-xs text-muted hover:text-red px-2 py-1 border border-border rounded uppercase"
+                        >          
+                          Delete
+                        </button>
+                         </>
+                          )}
+                           </div>
+                          ))}
+                          </div>  
                             {addingTaskToQuestId === quest.id ? (
                               <div className="mt-2 flex items-center gap-2 bg-bg/40 p-2 rounded border border-purple/40 glow-purple">
                                 <input
@@ -583,6 +650,38 @@ export default function ManageQuests() {
           </div>
         </div>
       )}
+      {/* Task Delete Confirmation Modal */}
+      {deletingTaskId !== null && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-bg/90 backdrop-blur-md animate-fade-in">
+          <div className="glass-panel p-8 max-w-md w-full mx-4 text-center border-red shadow-[0_0_20px_rgba(255,79,79,0.3)]">
+            <div className="sys-font-mono text-[11px] tracking-[4px] text-red mb-2 uppercase animate-pulse">
+              [ SYSTEM WARNING ]
+            </div>
+            <h2 className="sys-font-title text-2xl font-bold text-white mb-4 tracking-wider">
+              DELETE TASK?
+            </h2>
+            <div className="w-16 h-[2px] bg-red mx-auto mb-6" />
+            <p className="sys-font-body text-sm text-text/80 mb-8 leading-relaxed">
+              This task and its progress history will be permanently removed.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={confirmDeleteTask}
+                className="flex-1 py-3 bg-red/10 border border-red text-red hover:bg-red hover:text-white font-bold sys-font-mono text-sm tracking-[2px] rounded transition-all uppercase"
+              >
+                [ Delete ]
+              </button>
+              <button
+                onClick={() => setDeletingTaskId(null)}
+                className="flex-1 py-3 bg-bg2 border border-border text-muted hover:text-text rounded sys-font-mono text-sm tracking-[2px] transition-all uppercase"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
+  
 }
