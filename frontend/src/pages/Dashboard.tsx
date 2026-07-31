@@ -243,7 +243,8 @@ const incrementMutation = useMutation({
   },
   onSettled: () => {
     queryClient.invalidateQueries({ queryKey: ['stats'] });
-    queryClient.invalidateQueries({ queryKey: ['progress'] });
+    // Intentionally NOT invalidating 'progress' here to prevent UI bouncing on rapid clicks.
+    // The optimistic update handles the UI state accurately.
     queryClient.invalidateQueries({ queryKey: ['logs'] });
     queryClient.invalidateQueries({ queryKey: ['weekActivity'] });
   },
@@ -344,6 +345,46 @@ const handleGenerate = () => {
           >
             [ + Generate Quest ]
           </button>
+
+        {/* --- SYSTEM DAILY QUEST (THE CONSTRAINT) --- */}
+        <div className="mb-8">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="h-[2px] flex-1 bg-red/30"></div>
+            <h2 className="sys-font-mono text-[13px] text-red animate-pulse tracking-[4px] uppercase font-bold drop-shadow-[0_0_8px_rgba(255,0,0,0.8)]">
+              [ URGENT QUEST: DAILY PREPARATION ]
+            </h2>
+            <div className="h-[2px] flex-1 bg-red/30"></div>
+          </div>
+          <div className="space-y-3">
+            {quests.filter((q) => q.isDaily).length === 0 ? (
+              <p className="sys-font-mono text-center text-xs text-muted italic p-4 border border-red/20 bg-red/5 rounded shadow-[0_0_15px_rgba(255,0,0,0.1)]">
+                No daily requirements detected. Rest for now, Hunter.
+              </p>
+            ) : (
+              quests
+                .filter((q) => q.isDaily)
+                .map((quest) => (
+                  <div key={`daily-wrapper-${quest.id}`} className="ring-1 ring-red/30 rounded shadow-[0_0_15px_rgba(255,0,0,0.15)] relative overflow-hidden">
+                    {/* Subtle red glow background for daily quests */}
+                    <div className="absolute inset-0 bg-red/5 pointer-events-none"></div>
+                    <QuestCard
+                      key={`daily-${quest.id}`}
+                      name={quest.name}
+                      sub={quest.sub}
+                      isDaily={quest.isDaily}
+                      tasks={quest.tasks}
+                      completedTaskIds={completedTasks}
+                      progressMap={progressMap}
+                      onToggleTask={handleToggle}
+                      onIncrementTask={handleIncrement}
+                    />
+                  </div>
+                ))
+            )}
+          </div>
+        </div>
+        {/* ------------------------------------------ */}
+
         <div className="flex gap-[2px] mb-6 bg-panel border border-border rounded-lg p-1">
           
           {(['mind', 'body', 'life', 'report'] as const).map((tab) => (
@@ -363,7 +404,7 @@ const handleGenerate = () => {
 
         <div className="space-y-3">
           {activeTab !== 'report' && quests
-            .filter((q) => q.category === activeTab)
+            .filter((q) => q.category === activeTab && !q.isDaily)
             .map((quest) => (
               <QuestCard
                 key={quest.id}

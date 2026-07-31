@@ -439,8 +439,8 @@ const updateTaskMutation = useMutation({
                             <input
                               type="number"
                               min="1"
-                              value={task.targetValue}
-                              onChange={e => handleTaskChange(index, 'targetValue', Number(e.target.value))}
+                              value={task.targetValue === 0 ? '' : task.targetValue}
+                              onChange={e => handleTaskChange(index, 'targetValue', e.target.value === '' ? 0 : Number(e.target.value))}
                               className="w-full p-2 bg-bg border border-border/40 rounded text-xs text-text focus:outline-none focus:border-purple"
                               placeholder="Goal (e.g. 100)"
                               title="Set higher than 1 for a Progress Bar (Gym Reps)"
