@@ -117,6 +117,7 @@ Respond ONLY with valid JSON, no markdown, in this exact shape:
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: { responseMimeType: "application/json" }
           }),
         }
       );
