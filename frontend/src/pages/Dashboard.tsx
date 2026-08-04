@@ -10,6 +10,7 @@ import ExpBar from '../components/ExpBar';
 import QuestCard from '../components/QuestCard';
 
 
+
 const SOLO_LEVELING_QUOTES = [
   { text: "Consistency is about showing up every day, not burning yourself out in one day.", speaker: "The System" },
   { text: "The System uses me, and I use the system.", speaker: "Sung Jinwoo" },
@@ -95,6 +96,19 @@ export default function Dashboard() {
   const [goalInput, setGoalInput] = useState('');
 
   const [showResetNotification, setShowResetNotification] = useState(false);
+  const [focusedDailyQuest, setFocusedDailyQuest] = useState<Quest | null>(null);
+
+  useEffect(() => {
+    if (focusedDailyQuest || showGenerateModal) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [focusedDailyQuest, showGenerateModal]);
 
   // 2. SETUP & QUERIES
   const quote = getDailyQuote();
@@ -296,6 +310,7 @@ const handleGenerate = () => {
 }
 
   return (
+    <>
     <div className="min-h-screen pb-20 relative z-10 animate-fade-in">
       <div className="max-w-[900px] mx-auto px-4">
         {stats && (
@@ -333,7 +348,7 @@ const handleGenerate = () => {
           </>
         )}
 
-        <div className="glass-panel p-6 mb-8 border-purple/20">
+        <div className="glass-panel p-4 mb-4 border-purple/20">
           <p className="sys-font-body text-lg italic text-text/80 tracking-wide leading-relaxed">
             "{quote.text}"
           </p>
@@ -349,14 +364,35 @@ const handleGenerate = () => {
           </button>
 
         {/* --- SYSTEM DAILY QUEST (THE CONSTRAINT) --- */}
-        <div className="mb-8">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="h-[2px] flex-1 bg-red/30"></div>
-            <h2 className="sys-font-mono text-[13px] text-red animate-pulse tracking-[4px] uppercase font-bold drop-shadow-[0_0_8px_rgba(255,0,0,0.8)]">
-              [ URGENT QUEST: DAILY PREPARATION ]
-            </h2>
-            <div className="h-[2px] flex-1 bg-red/30"></div>
-          </div>
+        {(() => {
+          const dailyQuests = quests.filter((q) => q.isDaily);
+          let dailyTotal = 0;
+          let dailyCompleted = 0;
+          dailyQuests.forEach(q => {
+            q.tasks.forEach(t => {
+              dailyTotal++;
+              if (completedTasks.includes(t.id!)) {
+                dailyCompleted++;
+              }
+            });
+          });
+          
+          return (
+            <div className="mb-8">
+              <div className="flex flex-col items-center gap-2 mb-4">
+                <div className="flex items-center gap-3 w-full">
+                  <div className="h-[2px] flex-1 bg-red/30"></div>
+                  <h2 className="sys-font-mono text-[13px] text-red animate-pulse tracking-[4px] uppercase font-bold drop-shadow-[0_0_8px_rgba(255,0,0,0.8)] text-center">
+                    [ SYSTEM DEMAND: DAILY QUESTS ]
+                  </h2>
+                  <div className="h-[2px] flex-1 bg-red/30"></div>
+                </div>
+                {dailyTotal > 0 && (
+                  <div className="sys-font-mono text-[11px] tracking-[2px] text-red/80 uppercase">
+                    [ {dailyCompleted} / {dailyTotal} COMPLETED TODAY ]
+                  </div>
+                )}
+              </div>
           <div className="space-y-3">
             {quests.filter((q) => q.isDaily).length === 0 ? (
               <p className="sys-font-mono text-center text-xs text-muted italic p-4 border border-red/20 bg-red/5 rounded shadow-[0_0_15px_rgba(255,0,0,0.1)]">
@@ -366,25 +402,30 @@ const handleGenerate = () => {
               quests
                 .filter((q) => q.isDaily)
                 .map((quest) => (
-                  <div key={`daily-wrapper-${quest.id}`} className="ring-1 ring-red/30 rounded shadow-[0_0_15px_rgba(255,0,0,0.15)] relative overflow-hidden">
-                    {/* Subtle red glow background for daily quests */}
-                    <div className="absolute inset-0 bg-red/5 pointer-events-none"></div>
-                    <QuestCard
-                      key={`daily-${quest.id}`}
-                      name={quest.name}
-                      sub={quest.sub}
-                      isDaily={quest.isDaily}
-                      tasks={quest.tasks}
-                      completedTaskIds={completedTasks}
-                      progressMap={progressMap}
-                      onToggleTask={handleToggle}
-                      onIncrementTask={handleIncrement}
-                    />
-                  </div>
+                  <button 
+                    key={`daily-wrapper-${quest.id}`} 
+                    className="w-full text-left ring-1 ring-red/30 rounded p-5 bg-bg2/80 flex items-center justify-between hover:bg-red/5 transition-all shadow-[0_0_15px_rgba(255,0,0,0.15)] hover:shadow-[0_0_20px_rgba(255,0,0,0.3)] group relative overflow-hidden"
+                    onClick={() => setFocusedDailyQuest(quest)}
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-r from-red/10 to-transparent pointer-events-none w-1/3"></div>
+                    <div className="relative z-10">
+                      <h3 className="sys-font-title font-bold text-red text-xl uppercase tracking-wider group-hover:drop-shadow-[0_0_8px_rgba(255,0,0,0.8)] transition-all">
+                        {quest.name}
+                      </h3>
+                      <p className="sys-font-mono text-xs text-muted/80 tracking-[2px] uppercase mt-1">
+                        [ {quest.tasks.length} Requirements Pending ]
+                      </p>
+                    </div>
+                    <div className="sys-font-mono text-red text-xs uppercase animate-pulse border border-red/30 px-3 py-1 rounded bg-bg relative z-10">
+                      [ VIEW DETAILS ]
+                    </div>
+                  </button>
                 ))
             )}
+            </div>
           </div>
-        </div>
+        );
+        })()}
         {/* ------------------------------------------ */}
 
         <div className="flex gap-[2px] mb-6 bg-panel border border-border rounded-lg p-1">
@@ -522,6 +563,39 @@ const handleGenerate = () => {
           [ ARISE · aria system · v1.0 ]
         </footer>
       </div>
+    </div>
+
+      {/* --- DAILY QUEST FOCUS MODAL --- */}
+      {focusedDailyQuest && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-bg/95 backdrop-blur-md p-4 animate-fade-in overflow-y-auto"
+          onClick={() => setFocusedDailyQuest(null)}
+        >
+          <div
+            className="max-w-2xl w-full relative my-auto"
+            onClick={(e) => e.stopPropagation()}
+            >
+            <button
+              onClick={() => setFocusedDailyQuest(null)}
+              className="absolute -top-12 right-0 text-muted hover:text-red transition-colors sys-font-mono text-xs uppercase tracking-[3px]"
+            >
+              [ Exit ] 
+            </button> 
+            <div className="ring-1 ring-red/80 shadow-[0_0_40px_rgba(255,0,0,0.2)] rounded overflow-hidden bg-bg">
+              <QuestCard
+                key={`daily-focus-${focusedDailyQuest.id}`}
+                name={focusedDailyQuest.name}
+                sub={focusedDailyQuest.sub}
+                isDaily={focusedDailyQuest.isDaily}
+                tasks={focusedDailyQuest.tasks}
+                completedTaskIds={completedTasks}
+                progressMap={progressMap}
+                onToggleTask={handleToggle}
+                onIncrementTask={handleIncrement}
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
       {showLevelUp !== null && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-bg/85 backdrop-blur-md transition-opacity duration-300">
@@ -584,15 +658,21 @@ const handleGenerate = () => {
             </div>
           )}
        {showGenerateModal && (
-  <div className="fixed inset-0 z-50 flex items-center justify-center bg-bg/90 backdrop-blur-md">
-    <div className="glass-panel p-8 max-w-md w-full mx-4 border-purple glow-purple">
+  <div 
+    className="fixed inset-0 z-[100] flex items-center justify-center bg-bg/90 backdrop-blur-md overflow-y-auto"
+    onClick={() => setShowGenerateModal(false)}
+  >
+    <div 
+      className="glass-panel p-8 max-w-md w-full mx-4 border-purple glow-purple relative my-auto"
+      onClick={(e) => e.stopPropagation()}
+    >
       <div className="sys-font-mono text-[11px] tracking-[4px] text-purple2 mb-4 uppercase">
         [ Quest Generator ]
       </div>
       <p className="sys-font-body text-sm text-text/80 mb-4">
         What do you want to achieve?
       </p>
-      <textarea
+      <textarea 
         value={goalInput}
         onChange={e => setGoalInput(e.target.value)}
         placeholder="e.g., I want to learn Python"
@@ -642,7 +722,6 @@ const handleGenerate = () => {
           </div>
         </div>
       )}
-    </div>
-    
+    </>
   );
 }

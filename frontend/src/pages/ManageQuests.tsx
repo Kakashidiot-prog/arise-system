@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { questsApi } from '../api/axios';
 import { Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -50,6 +50,16 @@ export default function ManageQuests() {
   const [category, setCategory] = useState('mind');
   const [isCategoryOpen, setIsCategoryOpen] = useState(false);
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
+
+  useEffect(() => {
+    if (isFormModalOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => { document.body.style.overflow = 'unset'; };
+  }, [isFormModalOpen]);
+  
   const [order, setOrder] = useState(1);
   const [isDaily, setIsDaily] = useState(false);
   const [tasks, setTasks] = useState<{ name: string; note: string; exp: number; targetValue: number }[]>([]);
@@ -291,7 +301,7 @@ const updateTaskMutation = useMutation({
   };
 
   return (
-    <div className="min-h-screen pb-20 relative z-10 animate-fade-in">
+    <div className="min-h-screen pb-20 relative z-10">
       <div className="max-w-[1000px] mx-auto px-4 pt-10">
         
         {/* Navigation Link */}
@@ -301,7 +311,7 @@ const updateTaskMutation = useMutation({
           </Link>
         </div>
 
-        <h1 className="sys-font-title text-3xl md:text-4xl font-bold mb-2 glow-text tracking-wider text-purple3">
+        <h1 className="sys-font-title text-3xl md:text-4xl font-bold mb-2 glow-text tracking-wider text-purple3 animate-fade-in">
           GATE MANAGER
         </h1>
         <p className="sys-font-mono text-xs md:text-sm tracking-[2px] text-muted mb-8 uppercase">
@@ -318,8 +328,14 @@ const updateTaskMutation = useMutation({
           
           {/* Quest Creator Form Modal */}
           {isFormModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-bg/90 backdrop-blur-sm p-4 overflow-y-auto">
-            <div className="glass-panel p-6 border-purple/20 max-w-lg w-full relative my-auto animate-fade-in shadow-[0_0_40px_rgba(122,95,255,0.15)]">
+          <div 
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-bg/90 backdrop-blur-sm p-4 overflow-y-auto"
+            onClick={handleResetForm}
+          >
+            <div 
+              className="glass-panel p-6 border-purple/20 max-w-lg w-full relative my-auto animate-fade-in shadow-[0_0_40px_rgba(122,95,255,0.15)]"
+              onClick={(e) => e.stopPropagation()}
+            >
               <button 
                 onClick={handleResetForm}
                 className="absolute top-4 right-4 text-muted hover:text-white transition-colors text-xl"
@@ -535,7 +551,7 @@ const updateTaskMutation = useMutation({
           )}
 
           {/* Active Quests List */}
-          <div className="space-y-4 max-w-5xl mx-auto">
+          <div className="space-y-4 max-w-5xl mx-auto animate-fade-in">
             <div className="glass-panel p-6 border-purple/20">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
                 <h2 className="sys-font-mono text-sm md:text-base text-purple2 uppercase tracking-[2px] mb-0">
