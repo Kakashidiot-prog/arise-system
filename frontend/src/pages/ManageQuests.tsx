@@ -35,6 +35,12 @@ export default function ManageQuests() {
 
   const quests = data?.quests || [];
 
+  const [searchQuery, setSearchQuery] = useState('');
+  const filteredQuests = quests.filter(quest => 
+    quest.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    quest.sub.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   const [error, setError] = useState('');
   const [isSaving, setIsSaving] = useState(false);
 
@@ -42,6 +48,8 @@ export default function ManageQuests() {
   const [name, setName] = useState('');
   const [sub, setSub] = useState('');
   const [category, setCategory] = useState('mind');
+  const [isCategoryOpen, setIsCategoryOpen] = useState(false);
+  const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [order, setOrder] = useState(1);
   const [isDaily, setIsDaily] = useState(false);
   const [tasks, setTasks] = useState<{ name: string; note: string; exp: number; targetValue: number }[]>([]);
@@ -75,6 +83,7 @@ export default function ManageQuests() {
     setTasks([]);
     setEditingId(null);
     setError('');
+    setIsFormModalOpen(false);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -148,6 +157,7 @@ export default function ManageQuests() {
     setIsDaily(quest.isDaily || false);
     // When editing, we edit the quest metadata. Task editing is separate.
     setTasks([]);
+    setIsFormModalOpen(true);
   };
 
 const updateTaskMutation = useMutation({
@@ -304,11 +314,18 @@ const updateTaskMutation = useMutation({
           </div>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div>
           
-          {/* LEFT: Quest Creator Form */}
-          <div className="lg:col-span-1 space-y-6">
-            <div className="glass-panel p-6 border-purple/20">
+          {/* Quest Creator Form Modal */}
+          {isFormModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-bg/90 backdrop-blur-sm p-4 overflow-y-auto">
+            <div className="glass-panel p-6 border-purple/20 max-w-lg w-full relative my-auto animate-fade-in shadow-[0_0_40px_rgba(122,95,255,0.15)]">
+              <button 
+                onClick={handleResetForm}
+                className="absolute top-4 right-4 text-muted hover:text-white transition-colors text-xl"
+              >
+                ✕
+              </button>
               <h2 className="sys-font-mono text-sm md:text-base text-purple2 uppercase tracking-[2px] mb-6">
                 {editingId ? '[ Modify Quest ]' : '[ Initialize Quest ]'}
               </h2>
@@ -339,17 +356,57 @@ const updateTaskMutation = useMutation({
                   </div>
                 </div>
 
-                <div>
+                <div className="relative">
                   <label className="sys-font-mono text-xs tracking-[2px] text-muted uppercase mb-2 block">Category</label>
-                  <select
-                    value={category}
-                    onChange={e => setCategory(e.target.value)}
-                    className="w-full p-3 bg-[#080810] border border-border rounded focus:border-purple focus:outline-none text-text text-sm md:text-base transition-all"
+                  
+                  {/* Custom Dropdown Trigger */}
+                  <div 
+                    onClick={() => setIsCategoryOpen(!isCategoryOpen)}
+                    className="w-full p-3 bg-[#080810] border border-border rounded text-sm md:text-base cursor-pointer flex justify-between items-center hover:border-purple/50 transition-all select-none"
                   >
-                    <option value="mind">Intelligence</option>
-                    <option value="body">Strength</option>
-                    <option value="life">Vitality</option>
-                  </select>
+                    <span className="text-text">
+                      {category === 'mind' ? 'Intelligence' : category === 'body' ? 'Strength' : 'Vitality'}
+                    </span>
+                    <svg 
+                      className={`w-4 h-4 text-muted transition-transform ${isCategoryOpen ? 'rotate-180' : ''}`} 
+                      fill="none" 
+                      stroke="currentColor" 
+                      viewBox="0 0 24 24"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
+                    </svg>
+                  </div>
+
+                  {/* Custom Dropdown Menu */}
+                  {isCategoryOpen && (
+                    <div className="absolute z-20 top-full left-0 right-0 mt-1 bg-[#080810] border border-border/80 rounded shadow-[0_4px_20px_rgba(0,0,0,0.8)] overflow-hidden animate-fade-in">
+                      {[
+                        { id: 'mind', label: 'Intelligence' },
+                        { id: 'body', label: 'Strength' },
+                        { id: 'life', label: 'Vitality' }
+                      ].map((opt) => (
+                        <div
+                          key={opt.id}
+                          onClick={() => {
+                            setCategory(opt.id);
+                            setIsCategoryOpen(false);
+                          }}
+                          className={`p-3 cursor-pointer text-sm md:text-base hover:bg-purple/20 transition-all ${
+                            category === opt.id ? 'text-purple2 bg-purple/10 border-l-2 border-purple' : 'text-text border-l-2 border-transparent'
+                          }`}
+                        >
+                          {opt.label}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {/* Invisible backdrop to close dropdown when clicking outside */}
+                  {isCategoryOpen && (
+                    <div 
+                      className="fixed inset-0 z-10"
+                      onClick={() => setIsCategoryOpen(false)}
+                    />
+                  )}
                 </div>
 
                 <div>
@@ -475,25 +532,48 @@ const updateTaskMutation = useMutation({
               </form>
             </div>
           </div>
+          )}
 
-          {/* RIGHT: Active Quests List */}
-          <div className="lg:col-span-2 space-y-4">
+          {/* Active Quests List */}
+          <div className="space-y-4 max-w-5xl mx-auto">
             <div className="glass-panel p-6 border-purple/20">
-              <h2 className="sys-font-mono text-sm md:text-base text-purple2 uppercase tracking-[2px] mb-6">
-                [ Active Gate Registry ]
-              </h2>
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                <h2 className="sys-font-mono text-sm md:text-base text-purple2 uppercase tracking-[2px] mb-0">
+                  [ Active Gate Registry ]
+                </h2>
+                <div className="flex items-center gap-4 w-full md:w-auto">
+                  <button
+                    onClick={() => setIsFormModalOpen(true)}
+                    className="sys-font-mono text-xs md:text-sm bg-purple/20 border border-purple text-purple2 hover:bg-purple hover:text-white px-4 py-2 rounded transition-all uppercase whitespace-nowrap"
+                  >
+                    + New Quest
+                  </button>
+                  <div className="relative w-full md:w-64">
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search Quests..."
+                    className="w-full p-2 pl-8 bg-bg2 border border-border/60 rounded text-sm text-text focus:outline-none focus:border-purple/80 transition-all sys-font-mono"
+                  />
+                  <svg className="w-4 h-4 text-muted absolute left-2.5 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                  </svg>
+                </div>
+                </div>
+              </div>
 
               {loading ? (
                 <div className="text-center sys-font-mono text-muted py-10 text-sm uppercase tracking-widest animate-pulse">
                   Analyzing gate matrix...
                 </div>
-              ) : quests.length === 0 ? (
+              ) : filteredQuests.length === 0 ? (
                 <div className="text-center sys-font-mono text-muted py-10 text-sm uppercase">
                   No active gates detected.
                 </div>
               ) : (
                 <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2">
-                  {quests.map(quest => (
+                  {filteredQuests.map(quest => (
                     <div key={quest.id} className="p-4 bg-bg2 border border-border/40 rounded flex flex-col md:flex-row justify-between items-start md:items-center gap-4 hover:border-purple/30 transition-all">
                       <div>
                         <div className="flex items-center gap-3 mb-1.5">
