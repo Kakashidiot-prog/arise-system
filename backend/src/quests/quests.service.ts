@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateQuestDto } from './dto/create-quest.dto';
 import { UpdateQuestDto } from './dto/update-quest.dto';
 import { UpdateTaskDto } from '../quests/dto/update-task.dto';
+import { getPHDateString } from '../common/utils/date.util';
 
 @Injectable()
 export class QuestsService {
@@ -26,7 +27,7 @@ export class QuestsService {
 
   async create(userId: number, dto: CreateQuestDto) {
     const isDaily = dto.isDaily || false;
-    const lastResetDate = isDaily ? new Date().toISOString().split('T')[0] : null;
+    const lastResetDate = isDaily ? getPHDateString() : null;
 
     return this.prisma.quest.create({
       data: {

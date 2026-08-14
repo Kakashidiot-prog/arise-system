@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
+import { getPHDateString } from '../common/utils/date.util';
 
 @Injectable()
 export class ProgressService {
@@ -91,12 +92,12 @@ export class ProgressService {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) return;
 
-    const today = new Date().toISOString().slice(0, 10);
+    const today = getPHDateString();
     if (user.lastActiveDate === today) return;
 
     const yesterdayObj = new Date();
     yesterdayObj.setDate(yesterdayObj.getDate() - 1);
-    const yesterday = yesterdayObj.toISOString().slice(0, 10);
+    const yesterday = getPHDateString(yesterdayObj);
 
     let newStreak = user.streak;
     if (user.lastActiveDate === yesterday) {
@@ -157,7 +158,7 @@ export class ProgressService {
     for (let i = 0; i < 7; i++) {
       const d = new Date();
       d.setDate(d.getDate() - i);
-      const dateStr = d.toISOString().slice(0, 10);
+      const dateStr = getPHDateString(d);
       dates.push(dateStr);
       activityMap[dateStr] = false;
     }
@@ -176,7 +177,7 @@ export class ProgressService {
     });
 
     for (const log of logs) {
-      const dateStr = log.createdAt.toISOString().slice(0, 10);
+      const dateStr = getPHDateString(log.createdAt);
       if (activityMap[dateStr] !== undefined) {
         activityMap[dateStr] = true;
       }
@@ -195,7 +196,7 @@ export class ProgressService {
   }
   async runDailyResetForUser(userId: number) {
     try {
-      const today = new Date().toISOString().slice(0, 10);
+      const today = getPHDateString();
       
       // Find all quests that are daily, belong to user, and haven't been reset today
       const questsToReset = await this.prisma.quest.findMany({
