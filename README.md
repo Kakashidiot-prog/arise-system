@@ -19,7 +19,7 @@ A full-stack, RPG-themed productivity system that turns real-life goals into tra
 **Backend:** NestJS, TypeScript, Prisma ORM, PostgreSQL (Neon), JWT auth, class-validator
 **Frontend:** React, Vite, TypeScript, TanStack React Query, Tailwind CSS
 **AI Integration:** Google Gemini API
-**Deployment:** Railway (backend), Vercel (frontend)
+**Deployment:** Render (backend), Vercel (frontend)
 git 
 ## Architecture Highlights
 

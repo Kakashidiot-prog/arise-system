@@ -451,7 +451,7 @@ const updateTaskMutation = useMutation({
                   <span className={`sys-font-mono text-xs tracking-[2px] uppercase select-none transition-colors ${
                     isDaily ? 'text-purple2' : 'text-muted group-hover:text-text/80'
                   }`}>
-                    [ Daily Quest (Resets at midnight) ]
+                    [ Set as Daily Quest  ]
                   </span>
                 </div>
 
