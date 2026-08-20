@@ -370,7 +370,7 @@ const handleGenerate = () => {
           let dailyCompleted = 0;
           dailyQuests.forEach(q => {
             q.tasks.forEach(t => {
-              dailyTotal++;
+              dailyTotal++; 
               if (completedTasks.includes(t.id!)) {
                 dailyCompleted++;
               }
@@ -398,35 +398,60 @@ const handleGenerate = () => {
               <p className="sys-font-mono text-center text-xs text-muted italic p-4 border border-red/20 bg-red/5 rounded shadow-[0_0_15px_rgba(255,0,0,0.1)]">
                 No daily requirements detected. Rest for now, Hunter.
               </p>
-            ) : (
+                        ) : (
               quests
                 .filter((q) => q.isDaily)
-                .map((quest) => (
-                  <button 
-                    key={`daily-wrapper-${quest.id}`} 
-                    className="w-full text-left ring-1 ring-red/30 rounded p-5 bg-bg2/80 flex items-center justify-between hover:bg-red/5 transition-all shadow-[0_0_15px_rgba(255,0,0,0.15)] hover:shadow-[0_0_20px_rgba(255,0,0,0.3)] group relative overflow-hidden"
-                    onClick={() => setFocusedDailyQuest(quest)}
-                  >
-                    <div className="absolute inset-0 bg-gradient-to-r from-red/10 to-transparent pointer-events-none w-1/3"></div>
-                    <div className="relative z-10">
-                      <h3 className="sys-font-title font-bold text-red text-xl uppercase tracking-wider group-hover:drop-shadow-[0_0_8px_rgba(255,0,0,0.8)] transition-all">
-                        {quest.name}
-                      </h3>
-                      <p className="sys-font-mono text-xs text-muted/80 tracking-[2px] uppercase mt-1">
-                        [ {quest.tasks.length} Requirements Pending ]
-                      </p>
-                    </div>
-                    <div className="sys-font-mono text-red text-xs uppercase animate-pulse border border-red/30 px-3 py-1 rounded bg-bg relative z-10">
-                      [ VIEW DETAILS ]
-                    </div>
-                  </button>
-                ))
+                .map((quest) => {
+                  const doneCount = quest.tasks.filter((t) => completedTasks.includes(t.id)).length;
+                  const isQuestDone = quest.tasks.length > 0 && doneCount === quest.tasks.length;
+                  const pendingCount = quest.tasks.length - doneCount;
+
+                  return (
+                    <button
+                      key={`daily-wrapper-${quest.id}`}
+                      className={`w-full text-left ring-1 rounded p-5 bg-bg2/80 flex items-center justify-between transition-all group relative overflow-hidden ${
+                        isQuestDone
+                          ? 'ring-green/30 hover:bg-green/5 shadow-[0_0_15px_rgba(77,232,154,0.15)] hover:shadow-[0_0_20px_rgba(77,232,154,0.3)]'
+                          : 'ring-red/30 hover:bg-red/5 shadow-[0_0_15px_rgba(255,0,0,0.15)] hover:shadow-[0_0_20px_rgba(255,0,0,0.3)]'
+                      }`}
+                      onClick={() => setFocusedDailyQuest(quest)}
+                    >
+                      <div
+                        className={`absolute inset-0 bg-gradient-to-r to-transparent pointer-events-none w-1/3 ${
+                          isQuestDone ? 'from-green/10' : 'from-red/10'
+                        }`}
+                      ></div>
+                      <div className="relative z-10">
+                        <h3
+                          className={`sys-font-title font-bold text-xl uppercase tracking-wider transition-all ${
+                            isQuestDone
+                              ? 'text-green group-hover:drop-shadow-[0_0_8px_rgba(77,232,154,0.8)]'
+                              : 'text-red group-hover:drop-shadow-[0_0_8px_rgba(255,0,0,0.8)]'
+                          }`}
+                        >
+                          {quest.name}
+                        </h3>
+                        <p className="sys-font-mono text-xs text-muted/80 tracking-[2px] uppercase mt-1">
+                          {isQuestDone
+                            ? '[ Quest Cleared ]'
+                            : `[ ${pendingCount} Requirement${pendingCount === 1 ? '' : 's'} Pending ]`}
+                        </p>
+                      </div>
+                      <div
+                        className={`sys-font-mono text-xs uppercase border px-3 py-1 rounded bg-bg relative z-10 ${
+                          isQuestDone ? 'text-green border-green/30' : 'text-red border-red/30 animate-pulse'
+                        }`}
+                      >
+                        [ VIEW DETAILS ]
+                      </div>
+                    </button>
+                  );
+                })
             )}
-            </div>
           </div>
+        </div>
         );
         })()}
-        {/* ------------------------------------------ */}
 
         <div className="flex gap-[2px] mb-6 bg-panel border border-border rounded-lg p-1">
           
