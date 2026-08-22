@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
+import { CreateTaskDto } from './dto/create-task.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateQuestDto } from './dto/create-quest.dto';
 import { UpdateQuestDto } from './dto/update-quest.dto';
@@ -81,13 +82,13 @@ export class QuestsService {
     return this.prisma.quest.delete({ where: { id } });
   }
 
-async addTask(userId: number, questId: number, dto: { key: string; name: string; note?: string; exp: number; taskType: string; targetValue?: number }) {
+async addTask(userId: number, questId: number, dto: CreateTaskDto) {  
   const quest = await this.prisma.quest.findFirst({
-    where: { id: questId, userId },
+    where: { id: questId, userId }
   });
   if (!quest) throw new NotFoundException(`Quest #${questId} not found`);
 
-  return this.prisma.task.create({
+  return this.prisma.task.create({ 
     data: {
       ...dto,
       questId,

@@ -1,29 +1,6 @@
-import { IsString, IsInt, IsArray, IsOptional, ValidateNested, IsNumber, Min } from 'class-validator';
+import { IsString, IsInt, IsArray, IsOptional, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
-
-export class CreateTaskDto {
-  @IsString()
-  key: string;
-
-  @IsString()
-  name: string;
-
-  @IsOptional()
-  @IsString()
-  note?: string;
-
-  @IsNumber()
-  @Min(0)
-  exp: number;
-
-  @IsOptional()
-  @IsString()
-  taskType?: string;
-
-  @IsOptional()
-  @IsNumber()
-  targetValue?: number;
-}
+import { CreateTaskDto } from './create-task.dto';
 
 export class CreateQuestDto {
   @IsString()
@@ -47,6 +24,7 @@ export class CreateQuestDto {
   @IsOptional()
   isDaily?: boolean;
 
+  // Uses the same validation as CreateTaskDto for the tasks array.  "Single Source of Truth"
   @IsOptional()
   @IsArray()
   @ValidateNested({ each: true })
