@@ -82,6 +82,7 @@ interface Stats {
 }
 
 interface ProgressRecord {
+
   taskId: number;
   completed: boolean;
   currentValue: number;
@@ -151,9 +152,11 @@ export default function Dashboard() {
 
   useEffect(() => {
     if (questsData?.resetOccurred) {
+      queryClient.setQueryData(['progress'], []); // Clear progress data on reset
+
       setShowResetNotification(true);
     }
-  }, [questsData?.resetOccurred]);
+  }, [questsData?.resetOccurred, queryClient]);
 
   // 4. MUTATIONS & HANDLERS
   const acceptWelcomeMutation = useMutation({
@@ -363,36 +366,39 @@ const handleGenerate = () => {
             [ + Generate Quest ]
           </button>
 
-        {/* --- SYSTEM DAILY QUEST (THE CONSTRAINT) --- */}
-        {(() => {
-          const dailyQuests = quests.filter((q) => q.isDaily);
-          let dailyTotal = 0;
-          let dailyCompleted = 0;
-          dailyQuests.forEach(q => {
-            q.tasks.forEach(t => {
-              dailyTotal++; 
-              if (completedTasks.includes(t.id!)) {
-                dailyCompleted++;
-              }
-            });
-          });
-          
-          return (
-            <div className="mb-8">
-              <div className="flex flex-col items-center gap-2 mb-4">
-                <div className="flex items-center gap-3 w-full">
-                  <div className="h-[2px] flex-1 bg-red/30"></div>
-                  <h2 className="sys-font-mono text-[13px] text-red animate-pulse tracking-[4px] uppercase font-bold drop-shadow-[0_0_8px_rgba(255,0,0,0.8)] text-center">
-                    [ SYSTEM DEMAND: DAILY QUESTS ]
-                  </h2>
-                  <div className="h-[2px] flex-1 bg-red/30"></div>
-                </div>
-                {dailyTotal > 0 && (
-                  <div className="sys-font-mono text-[11px] tracking-[2px] text-red/80 uppercase">
-                    [ {dailyCompleted} / {dailyTotal} COMPLETED TODAY ]
+          {/* --- SYSTEM DAILY QUEST (THE CONSTRAINT) --- */}
+            {(() => {
+              const dailyQuests = quests.filter((q) => q.isDaily);
+              let dailyTotal = 0;
+              let dailyCompleted = 0;
+
+              dailyQuests.forEach(q => {
+                q.tasks.forEach(t => {
+                  dailyTotal++;
+                  if (completedTasks.includes(t.id!)) {
+                    dailyCompleted++;
+                  }
+                });
+              });
+
+              const allDailiesDone = dailyTotal > 0 && dailyTotal === dailyCompleted;
+
+              return (
+                <div className="mb-8">
+                  <div className="flex flex-col items-center gap-2 mb-4">
+                    <div className="flex items-center gap-3 w-full">
+                      <div className={`h-[2px] flex-1 ${allDailiesDone ? 'bg-green/30' : 'bg-red/30'}`}></div>
+                      <h2 className={`sys-font-mono text-[13px] animate-pulse tracking-[4px] uppercase font-bold text-center ${allDailiesDone ? 'text-green drop-shadow-[0_0_8px_rgba(77,232,154,0.8)]' : 'text-red drop-shadow-[0_0_8px_rgba(255,0,0,0.8)]'}`}>
+                        {allDailiesDone ? '[ DAILY REQUIREMENTS SATISFIED ]' : '[ SYSTEM DEMAND: DAILY QUESTS ]'}
+                      </h2>
+                      <div className={`h-[2px] flex-1 ${allDailiesDone ? 'bg-green/30' : 'bg-red/30'}`}></div>
+                    </div>
+                    {dailyTotal > 0 && (
+                      <div className={`sys-font-mono text-[11px] tracking-[2px] uppercase ${allDailiesDone ? 'text-green/80' : 'text-red/80'}`}>
+                        [ {dailyCompleted} / {dailyTotal} COMPLETED TODAY ]
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
           <div className="space-y-3">
             {quests.filter((q) => q.isDaily).length === 0 ? (
               <p className="sys-font-mono text-center text-xs text-muted italic p-4 border border-red/20 bg-red/5 rounded shadow-[0_0_15px_rgba(255,0,0,0.1)]">
