@@ -53,21 +53,35 @@ export default function TaskItem({ id, name, note, exp, targetValue, currentValu
           
           {note && <div className="task-note text-[10px] text-muted sys-font-mono mt-1">{note}</div>}
           
-          {/* Progress Bar & Button (Only for Counter Tasks) */}
+          {/* Progress Bar & Buttons (Only for Counter Tasks) */}
           {isCounter && (
-            <div className="mt-3 flex items-center gap-3">
+            <div className="mt-3 flex items-center gap-2">
               <div className="flex-1 h-2 bg-bg2 rounded overflow-hidden border border-border/50">
                 <div 
                   className={`h-full transition-all duration-500 ${isCompleted ? 'bg-green glow-green' : 'bg-purple glow-purple'}`}
                   style={{ width: `${progressPct}%` }}
                 />
               </div>
+
+              {/* [-1] Decrement / Undo Button */}
               <button
+                type="button"
+                onClick={() => onIncrement && onIncrement(id, -1)}
+                disabled={currentValue <= 0}
+                className="sys-font-mono text-[10px] px-2.5 py-1 rounded border border-border/60 text-muted hover:text-red hover:border-red/40 transition-all uppercase disabled:opacity-30 disabled:cursor-not-allowed active:scale-95"
+                title="Undo 1 Rep"
+              >
+                -1
+              </button>
+
+              {/* [+1] Increment Button */}
+              <button
+                type="button"
                 onClick={() => onIncrement && onIncrement(id, 1)}
                 disabled={isCompleted}
-                className={`sys-font-mono text-[10px] px-3 py-1 rounded border transition-all uppercase ${
-                  isCompleted 
-                    ? 'border-green/30 text-green/50 bg-green/5 cursor-not-allowed' 
+                className={`sys-font-mono text-[10px] px-3 py-1 rounded border transition-all uppercase active:scale-95 ${
+                  isCompleted
+                    ? 'border-green/30 text-green/50 bg-green/5 cursor-not-allowed'
                     : 'border-purple/50 text-purple2 bg-purple/10 hover:bg-purple hover:text-white hover:border-purple'
                 }`}
               >

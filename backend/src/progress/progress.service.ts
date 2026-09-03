@@ -61,9 +61,12 @@ export class ProgressService {
       });
     }
 
-    if (progress.completed) return { completed: true };
+    // only block if completed is true and amount is positive, otherwise allow decrementing
+    if (progress.completed && amount >= 0) return { completed: true };
 
-    const newValue = progress.currentValue + amount;
+    const wasCompleted = progress.completed;
+    // Math.max clamps the new value to be at least 0, preventing negative progress 
+    const newValue = Math.max(0, progress.currentValue + amount);
     const target = task.targetValue || 1;
 
     if (newValue >= target) {
@@ -72,18 +75,24 @@ export class ProgressService {
         where: { id: progress.id },
         data: { currentValue: target, completed: true },
       });
-      await this.updateUserExp(userId, task.exp);
+      // Only update EXP and streak if the task was not previously completed
+      if (!wasCompleted) {  
+        await this.updateUserExp(userId, task.exp);
       await this.updateStreak(userId);
       await this.prisma.log.create({
         data: { userId, text: `Completed: ${task.name} (+${task.exp} EXP)` },
       });
+    } 
       return { completed: true, currentValue: target };
     } else {
-
+      // if the task was previously completed and now is not, we need to decrement the EXP and update the log
     await this.prisma.progress.update({
       where: { id: progress.id },
-      data: { currentValue: newValue },
+      data: { currentValue: newValue, completed: false },
     });
+      if (wasCompleted) {
+        await this.updateUserExp(userId, -task.exp);
+      }
     return { completed: false, currentValue: newValue };
     }
   }
