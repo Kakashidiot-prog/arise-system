@@ -12,4 +12,8 @@ export class UpdateTaskDto {
   @IsOptional()
   @IsNumber()
   exp?: number;
+
+  @IsOptional()
+  @IsNumber()
+  targetValue?: number;
 }

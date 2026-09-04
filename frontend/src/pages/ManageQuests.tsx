@@ -240,24 +240,29 @@ const updateTaskMutation = useMutation({
   });
 
   const [addingTaskToQuestId, setAddingTaskToQuestId] = useState<number | null>(null);
-  const [newTaskDraft, setNewTaskDraft] = useState('');
+  const [newTaskDraft, setNewTaskDraft] = useState<{ name: string; note: string; exp: number; targetValue: number }>({
+    name: '',
+    note: '',
+    exp: 1,
+    targetValue: 1,
+  });
 
   const handleConfirmNewTask = (questId: number) => {
-    if (!newTaskDraft.trim()) return;
+    if (!newTaskDraft.name.trim()) return;
     
     addTaskMutation.mutate({
       questId,
       data: {
         key: `t_${Date.now()}`,
-        name: newTaskDraft.trim(),
-        note: '',
-        exp: 1, 
-        taskType: 'checkbox',
-        targetValue: 1
+        name: newTaskDraft.name.trim(),
+        note: newTaskDraft.note.trim() || undefined,
+        exp: Number(newTaskDraft.exp) || 1, 
+        taskType: (Number(newTaskDraft.targetValue) > 1) ? 'counter' : 'checkbox',
+        targetValue: Number(newTaskDraft.targetValue) || 1
       }
     });
     setAddingTaskToQuestId(null);
-    setNewTaskDraft('');
+    setNewTaskDraft({ name: '', note: '', exp: 1, targetValue: 1 });
   };
 
   const [deletingQuestId, setDeletingQuestId] = useState<number | null>(null);
@@ -282,13 +287,22 @@ const updateTaskMutation = useMutation({
     setDeletingTaskId(null);
   };
   
-
   const [editingTaskId, setEditingTaskId] = useState<number | null>(null);
-  const [taskDraft, setTaskDraft] = useState<{ name: string; note: string; exp: number; }>({ name: '', note: '', exp: 0 });
+  const [taskDraft, setTaskDraft] = useState<{ name: string; note: string; exp: number; targetValue: number }>({ 
+    name: '', 
+    note: '', 
+    exp: 1,
+    targetValue: 1 
+  });
 
   const handleTaskEditClick = (task: Task) => {
     setEditingTaskId(task.id!);
-    setTaskDraft({ name: task.name, note: task.note, exp: task.exp });
+    setTaskDraft({ 
+      name: task.name, 
+      note: task.note || '', 
+      exp: task.exp,
+      targetValue: task.targetValue || 1
+    });
   };
 
   const handleTaskSave = (taskId: number) => {
@@ -603,91 +617,151 @@ const updateTaskMutation = useMutation({
                         </p>
                         <div className="mt-3 space-y-2">
                           {quest.tasks.map(task => (
-                        <div key={task.id} className="flex items-center gap-2 bg-bg/40 p-2 rounded border border-border/20">
-                          {editingTaskId === task.id ? (
-                          <>
-                          <input
-                          type="text"
-                          value={taskDraft.name}
-                          onChange={e => setTaskDraft(prev => ({ ...prev, name: e.target.value }))}
-                          className="flex-1 p-1 bg-bg border border-border/40 rounded text-xs text-text"
-                          />
-                         <select
-                          value={taskDraft.exp}
-                          onChange={e => setTaskDraft(prev => ({ ...prev, exp: Number(e.target.value) }))}
-                          className="w-24 p-1 bg-bg border border-border/40 rounded text-xs text-text"
-                           >
-                          <option value="1">E (1)</option>
-                          <option value="2">D (2)</option>
-                          <option value="3">C (3)</option>
-                          <option value="5">B (5)</option>
-                          <option value="10">A (10)</option>
-                        </select>
-                        <button
-                        onClick={() => handleTaskSave(task.id!)}
-                        className="text-xs text-green px-2 py-1 border border-green/40 rounded uppercase"
-                          >
-                           Save
-                        </button>
-                        <button
-                        onClick={() => setEditingTaskId(null)}
-                        className="text-xs text-muted px-2 py-1 border border-border rounded uppercase"
-                          >
-                           Cancel
-                        </button>
-                           </>
-                          ) : (
-                          <>
-                        <span className="flex-1 text-xs text-text/80">{task.name}</span>
-                        <span className="text-xs text-gold">{task.exp} EXP</span>
-                        <button
-                          onClick={() => handleTaskEditClick(task)}
-                          className="text-xs text-muted hover:text-purple2 px-2 py-1 border border-border rounded uppercase"
-                          >
-                          Edit
-                        </button>
-                        <button
-                         onClick={() => setDeletingTaskId(task.id!)}
-                         className="text-xs text-muted hover:text-red px-2 py-1 border border-border rounded uppercase"
-                        >          
-                          Delete
-                        </button>
-                         </>
-                          )}
-                           </div>
+                            <div key={task.id} className="flex items-center gap-2 bg-bg/40 p-2 rounded border border-border/20">
+                              {editingTaskId === task.id ? (
+                                <div className="flex flex-col md:flex-row gap-2 w-full p-1">
+                                  <input
+                                    type="text"
+                                    value={taskDraft.name}
+                                    onChange={e => setTaskDraft(prev => ({ ...prev, name: e.target.value }))}
+                                    placeholder="Task name"
+                                    className="flex-1 p-1 bg-bg border border-border/40 rounded text-xs text-text"
+                                  />
+                                  <input
+                                    type="text"
+                                    value={taskDraft.note}
+                                    onChange={e => setTaskDraft(prev => ({ ...prev, note: e.target.value }))}
+                                    placeholder="Note"
+                                    className="flex-1 p-1 bg-bg border border-border/40 rounded text-xs text-text"
+                                  />
+                                  <div className="flex items-center gap-2">
+                                    <select
+                                      value={taskDraft.exp}
+                                      onChange={e => setTaskDraft(prev => ({ ...prev, exp: Number(e.target.value) }))}
+                                      className="w-20 p-1 bg-bg border border-border/40 rounded text-xs text-text"
+                                    >
+                                      <option value="1">E (1)</option>
+                                      <option value="2">D (2)</option>
+                                      <option value="3">C (3)</option>
+                                      <option value="5">B (5)</option>
+                                      <option value="10">A (10)</option>
+                                    </select>
+                                    <input
+                                      type="number"
+                                      min="1"
+                                      value={taskDraft.targetValue}
+                                      onChange={e => setTaskDraft(prev => ({ ...prev, targetValue: Number(e.target.value) || 1 }))}
+                                      placeholder="Goal"
+                                      title="Target Reps/Sets"
+                                      className="w-16 p-1 bg-bg border border-border/40 rounded text-xs text-text"
+                                    />
+                                    <button
+                                      onClick={() => handleTaskSave(task.id!)}
+                                      className="text-xs text-green px-2 py-1 border border-green/40 rounded uppercase font-bold"
+                                    >
+                                      Save
+                                    </button>
+                                    <button
+                                      onClick={() => setEditingTaskId(null)}
+                                      className="text-xs text-muted px-2 py-1 border border-border rounded uppercase"
+                                    >
+                                      Cancel
+                                    </button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <>
+                                  <div className="flex-1 flex items-center gap-2">
+                                    <span className="text-xs text-text/80">{task.name}</span>
+                                    {task.targetValue && task.targetValue > 1 && (
+                                      <span className="text-[10px] sys-font-mono text-purple2 px-1.5 py-0.5 rounded bg-purple/10 border border-purple/20">
+                                        Goal: {task.targetValue}
+                                      </span>
+                                    )}
+                                    {task.note && <span className="text-[10px] text-muted sys-font-mono">({task.note})</span>}
+                                  </div>
+                                  <span className="text-xs text-gold">{task.exp} EXP</span>
+                                  <button
+                                    onClick={() => handleTaskEditClick(task)}
+                                    className="text-xs text-muted hover:text-purple2 px-2 py-1 border border-border rounded uppercase"
+                                  >
+                                    Edit
+                                  </button>
+                                  <button
+                                    onClick={() => setDeletingTaskId(task.id!)}
+                                    className="text-xs text-muted hover:text-red px-2 py-1 border border-border rounded uppercase"
+                                  >          
+                                    Delete
+                                  </button>
+                                </>
+                              )}
+                            </div>
                           ))}
-                          </div>  
-                            {addingTaskToQuestId === quest.id ? (
-                              <div className="mt-2 flex items-center gap-2 bg-bg/40 p-2 rounded border border-purple/40 glow-purple">
-                                <input
-                                  type="text"
-                                  value={newTaskDraft}
-                                  onChange={(e) => setNewTaskDraft(e.target.value)}
-                                  placeholder="Enter task name..."
-                                  className="flex-1 p-1 bg-[#080810] border border-border/40 rounded text-xs text-text focus:outline-none focus:border-purple"
-                                  autoFocus
-                                />
-                                <button
-                                  onClick={() => handleConfirmNewTask(quest.id)}
-                                  className="text-xs text-green hover:text-green2 px-2 py-1 border border-green/40 hover:border-green rounded uppercase transition-colors"
-                                >
-                                  Add
-                                </button>
-                                <button
-                                  onClick={() => { setAddingTaskToQuestId(null); setNewTaskDraft(''); }}
-                                  className="text-xs text-muted hover:text-red px-2 py-1 border border-border hover:border-red rounded uppercase transition-colors"
-                                >
-                                  Cancel
-                                </button>
-                              </div>
-                            ) : (
-                              <button
-                                onClick={() => setAddingTaskToQuestId(quest.id)}
-                                className="w-full mt-2 py-1.5 border border-dashed border-purple/40 text-purple2 hover:bg-purple/10 hover:border-purple rounded sys-font-mono text-[10px] uppercase tracking-[2px] transition-all"
+                        </div>  
+                        {addingTaskToQuestId === quest.id ? (
+                          <div className="mt-2 p-3 bg-bg/60 border border-purple/40 rounded space-y-2 glow-purple">
+                            <div className="flex gap-2">
+                              <input
+                                type="text"
+                                value={newTaskDraft.name}
+                                onChange={(e) => setNewTaskDraft(prev => ({ ...prev, name: e.target.value }))}
+                                placeholder="Task name (e.g. Push-ups)"
+                                className="flex-1 p-1.5 bg-[#080810] border border-border/40 rounded text-xs text-text focus:outline-none focus:border-purple"
+                                autoFocus
+                              />
+                              <input
+                                type="text"
+                                value={newTaskDraft.note}
+                                onChange={(e) => setNewTaskDraft(prev => ({ ...prev, note: e.target.value }))}
+                                placeholder="Note (optional)"
+                                className="flex-1 p-1.5 bg-[#080810] border border-border/40 rounded text-xs text-text focus:outline-none focus:border-purple"
+                              />
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <select
+                                value={newTaskDraft.exp}
+                                onChange={(e) => setNewTaskDraft(prev => ({ ...prev, exp: Number(e.target.value) }))}
+                                className="w-28 p-1.5 bg-[#080810] border border-border/40 rounded text-xs text-text focus:outline-none focus:border-purple"
                               >
-                                + Add New Task
+                                <option value="1">E-Rank (1 EXP)</option>
+                                <option value="2">D-Rank (2 EXP)</option>
+                                <option value="3">C-Rank (3 EXP)</option>
+                                <option value="5">B-Rank (5 EXP)</option>
+                                <option value="10">A-Rank (10 EXP)</option>
+                              </select>
+                              <input
+                                type="number"
+                                min="1"
+                                value={newTaskDraft.targetValue}
+                                onChange={(e) => setNewTaskDraft(prev => ({ ...prev, targetValue: Number(e.target.value) || 1 }))}
+                                placeholder="Goal (e.g. 4 sets)"
+                                title="Set higher than 1 for a Progress Bar"
+                                className="flex-1 p-1.5 bg-[#080810] border border-border/40 rounded text-xs text-text focus:outline-none focus:border-purple"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => handleConfirmNewTask(quest.id)}
+                                className="text-xs text-green hover:text-green2 px-3 py-1.5 border border-green/40 hover:border-green rounded uppercase font-bold transition-all"
+                              >
+                                Add
                               </button>
-                            )}
+                              <button
+                                type="button"
+                                onClick={() => { setAddingTaskToQuestId(null); setNewTaskDraft({ name: '', note: '', exp: 1, targetValue: 1 }); }}
+                                className="text-xs text-muted hover:text-red px-3 py-1.5 border border-border hover:border-red rounded uppercase transition-all"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => setAddingTaskToQuestId(quest.id)}
+                            className="w-full mt-2 py-1.5 border border-dashed border-purple/40 text-purple2 hover:bg-purple/10 hover:border-purple rounded sys-font-mono text-[10px] uppercase tracking-[2px] transition-all"
+                          >
+                            + Add New Task
+                          </button>
+                        )}
                       </div>
 
                       <div className="flex items-center gap-3 w-full md:w-auto justify-end">
