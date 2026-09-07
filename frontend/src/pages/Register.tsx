@@ -13,14 +13,24 @@ export default function Register() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+
+    setError('PASSWORD MUST BE AT LEAST 6 CHARACTERS LONG');
+    if (password.length < 6) { 
+      return;
+    }
     setLoading(true);
     try {
       const data = await authApi.register(username, password);
       setToken(data.access_token);
       navigate('/dashboard');
-    } catch (err: any) {
+    } catch (err: any) {  
+
+      const status = err.response?.status;
       const backendMessage = err.response?.data?.message;
-      if (Array.isArray(backendMessage)) {
+
+      if (status === 409) {
+        setError('USERNAME ALREADY EXISTS. PLEASE CHOOSE A DIFFERENT ONE.');
+      } else if (Array.isArray(backendMessage)) {
         setError(backendMessage.join(', '));
       } else if (typeof backendMessage === 'string') {
         setError(backendMessage);
