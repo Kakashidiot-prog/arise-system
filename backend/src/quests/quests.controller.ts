@@ -55,6 +55,11 @@
       return this.questsService.taskUpdate(user.id, id, dto);
     }
 
+    @Delete('task/:id')
+    deleteTask(@CurrentUser() user: { id: number }, @Param('id', ParseIntPipe) id: number) {
+      return this.questsService.deleteTask(user.id, id);
+    }
+
     @Post(':id/tasks')
     addTask(@CurrentUser() user: { id: number }, @Param('id', ParseIntPipe) id: number, @Body() dto: CreateTaskDto) {
       return this.questsService.addTask(user.id, id, dto);

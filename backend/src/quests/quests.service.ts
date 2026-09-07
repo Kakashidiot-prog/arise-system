@@ -74,6 +74,15 @@ export class QuestsService {
     });
   }
 
+  async deleteTask(userId: number, id: number) {
+    const task = await this.prisma.task.findFirst({
+      where: { id, quest: { userId } },
+    });
+    if (!task) throw new NotFoundException(`Task #${id} not found`);
+
+    return this.prisma.task.delete({ where: { id } });
+  }
+
   async delete(userId: number, id: number) {
     const quest = await this.prisma.quest.findUnique({ where: { id } });
     if (!quest) throw new NotFoundException(`Quest #${id} not found`);

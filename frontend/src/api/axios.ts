@@ -55,7 +55,7 @@ export const questsApi = {
     return res.data;
   },
   deleteTask: async (id: number) => {
-    const res = await api.delete(`/tasks/${id}`);
+    const res = await api.delete(`/quests/task/${id}`);
     return res.data;
   },
   addTask: async (id: number, data: any) => {
