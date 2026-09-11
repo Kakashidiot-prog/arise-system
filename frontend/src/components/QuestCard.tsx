@@ -34,7 +34,7 @@ export default function QuestCard({ name, sub, isDaily, tasks, completedTaskIds,
     }`}>
       {/* Header */}
       <div 
-        className="quest-header flex items-center gap-4 p-4 cursor-pointer select-none"
+        className="quest-header flex items-center gap-4 p-4 cursor-pointer select-none flex-wrap"
         onClick={() => setIsOpen(!isOpen)}
       >
         <div className="quest-meta flex-1">

@@ -92,6 +92,7 @@ export default function Dashboard() {
   // 1. STATE
   const [activeTab, setActiveTab] = useState<'mind' | 'body' | 'life' | 'report'>('mind');
   const [showLevelUp, setShowLevelUp] = useState<number | null>(null);
+  const [previousLevel, setPreviousLevel] = useState <number | null>(null);
   const [showWelcome, setShowWelcome] = useState(false);
   const [showGenerateModal, setShowGenerateModal] = useState(false);
   const [goalInput, setGoalInput] = useState('');
@@ -157,6 +158,15 @@ export default function Dashboard() {
       setShowResetNotification(true);
     }
   }, [questsData?.resetOccurred, queryClient]);
+
+  useEffect(() => { 
+    if (stats) {
+      if (previousLevel !== null && stats.level > previousLevel) {
+        setShowLevelUp(stats.level);
+      }
+      setPreviousLevel(stats.level);
+    }
+  }, [stats?.level]);
 
   // 4. MUTATIONS & HANDLERS
   const acceptWelcomeMutation = useMutation({
@@ -224,20 +234,16 @@ const toggleMutation = useMutation({
   },
   onSettled: () => {
     queryClient.invalidateQueries({ queryKey: ['stats'] });
-    queryClient.invalidateQueries({ queryKey: ['progress'] });
+    // Intentionally NOT invalidating 'progress' here to prevent UI bouncing
     queryClient.invalidateQueries({ queryKey: ['logs'] });
     queryClient.invalidateQueries({ queryKey: ['weekActivity'] });
   },
 });
   
-  const handleToggle = async (taskId: number) => {
-  const prevLevel = stats?.level;
-  await toggleMutation.mutateAsync(taskId);
-  const newStats = queryClient.getQueryData<Stats>(['stats']);
-  if (prevLevel !== undefined && newStats && newStats.level > prevLevel) {
-    setShowLevelUp(newStats.level);
-  }
-};
+  const handleToggle = (taskId: number) => {
+    toggleMutation.mutate(taskId);
+  };
+
 
 const incrementMutation = useMutation({
   mutationFn: ({ taskId, amount }: { taskId: number; amount: number }) => progressApi.increment(taskId, amount),
@@ -247,10 +253,19 @@ const incrementMutation = useMutation({
 
     queryClient.setQueryData<ProgressRecord[]>(['progress'], (old = []) => {
       const exists = old.find(p => p.taskId === taskId);
+      const task = quests.flatMap(q => q.tasks).find(t => t.id === taskId);
+      const target = task?.targetValue ?? 1;
+
       if (exists) {
-        return old.map(p => p.taskId === taskId ? { ...p, currentValue: p.currentValue + amount } : p);
+        const newValue = Math.max(0, exists.currentValue + amount);
+        return old.map(p => p.taskId === taskId ? {
+          ...p,
+          currentValue: newValue,
+          completed: newValue >= target
+        } : p);
       }
-      return [...old, { taskId, completed: false, currentValue: amount }];
+      const newValue = Math.max(0, amount);
+      return [...old, { taskId, completed: newValue >= target, currentValue: newValue }];
     });
 
     return { previousProgress };
@@ -270,13 +285,8 @@ const incrementMutation = useMutation({
 });
   
   
-  const handleIncrement = async (taskId: number, amount: number) => {
-    const prevLevel = stats?.level;
-    await incrementMutation.mutateAsync({ taskId, amount });
-    const newStats = queryClient.getQueryData<Stats>(['stats']);
-    if (prevLevel !== undefined && newStats && newStats.level > prevLevel) {
-      setShowLevelUp(newStats.level);
-    }
+  const handleIncrement = (taskId: number, amount: number) => {
+    incrementMutation.mutate({ taskId, amount });
   };
 
   const handleLogout = () => {
@@ -415,7 +425,7 @@ const handleGenerate = () => {
                   return (
                     <button
                       key={`daily-wrapper-${quest.id}`}
-                      className={`w-full text-left ring-1 rounded p-5 bg-bg2/80 flex items-center justify-between transition-all group relative overflow-hidden ${
+                      className={`w-full text-left ring-1 rounded p-5 bg-bg2/80 flex items-center justify-between gap-3 transition-all group relative overflow-hidden ${
                         isQuestDone
                           ? 'ring-green/30 hover:bg-green/5 shadow-[0_0_15px_rgba(77,232,154,0.15)] hover:shadow-[0_0_20px_rgba(77,232,154,0.3)]'
                           : 'ring-red/30 hover:bg-red/5 shadow-[0_0_15px_rgba(255,0,0,0.15)] hover:shadow-[0_0_20px_rgba(255,0,0,0.3)]'
@@ -440,16 +450,16 @@ const handleGenerate = () => {
                         <p className="sys-font-mono text-xs text-muted/80 tracking-[2px] uppercase mt-1">
                           {isQuestDone
                             ? '[ Quest Cleared ]'
-                            : `[ ${pendingCount} Requirement${pendingCount === 1 ? '' : 's'} Pending ]`}
+                            : `[ ${pendingCount} Pending ]`}
                         </p>
                       </div>
-                      <div
-                        className={`sys-font-mono text-xs uppercase border px-3 py-1 rounded bg-bg relative z-10 ${
+                      <span
+                        className={`sys-font-mono text-xs uppercase border px-3 py-1 rounded bg-bg relative z-10 pointer-events-none ${
                           isQuestDone ? 'text-green border-green/30' : 'text-red border-red/30 animate-pulse'
                         }`}
                       >
-                        [ VIEW DETAILS ]
-                      </div>
+                        [ VIEW ]
+                      </span>
                     </button>
                   );
                 })
