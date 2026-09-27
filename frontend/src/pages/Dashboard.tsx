@@ -13,23 +13,14 @@ import QuestCard from '../components/QuestCard';
 
 const SOLO_LEVELING_QUOTES = [
   { text: "Consistency is about showing up every day, not burning yourself out in one day.", speaker: "The System" },
-  { text: "The System uses me, and I use the system.", speaker: "Sung Jinwoo" },
-  { text: "I am the record of your struggle. I am the shadow of your growth.", speaker: "The System" },
   { text: "Focus on small improvement each day, instead of trying to do everything at once.", speaker: "Kaizen" },
   { text: "Embrace imperfection. Taking action is better than waiting for perfection.", speaker: "Wabi-Sabi" },
   { text: "Accept things as they are and move forward.", speaker: "Shikata Ga Nai" },
+  { text: "The System uses me, and I use the system.", speaker: "Sung Jinwoo" },
+  { text: "Whats a man who can't even keep the promises he made to himself.", speaker: "The System" },
   { text: "I will keep leveling up until I reach the top.", speaker: "Sung Jinwoo" },
-  { text: "I'm always leveling up ceaselessly.", speaker: "Sung Jinwoo" },
-  { text: "The day I stop working is the day I truly die.", speaker: "Sung Jinwoo" },
-  { text: "We are what we choose to become.", speaker: "Sung Jinwoo" },
-  { text: "Our greatest glory lies not in never falling, but in rising every time we fall.", speaker: "Sung Jinwoo" },
-  { text: "Strength is born from adversity.", speaker: "Sung Jinwoo" },
-  { text: "New challenges lead to new strengths.", speaker: "Sung Jinwoo" },
-  { text: "Arise.", speaker: "Jinwoo" },
-  { text: "The weak are meat, the strong eat.", speaker: "Sung Jinwoo" },
-  { text: "I'm still learning.", speaker: "Sung Jinwoo" },
-  { text: "Courage isn't the absence of fear.", speaker: "Sung Jinwoo" },
-  { text: "I certainly got much stronger than before.", speaker: "Sung Jinwoo" },
+  { text: "Don't spend another year doing the same shit.", speaker: "The System" },
+  { text: "I'm still learning.", speaker: "Sung Jinwoo" }, 
 ];
 
 function getDailyQuote() {
